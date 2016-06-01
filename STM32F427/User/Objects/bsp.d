@@ -58,3 +58,4 @@
 .\objects\bsp.o: ..\BSP\communication.h
 .\objects\bsp.o: ..\Algorithm\Control_Algorithm.h
 .\objects\bsp.o: ..\Algorithm\Math_Algorithm.h
+.\objects\bsp.o: ..\BSP\lsm303d.h

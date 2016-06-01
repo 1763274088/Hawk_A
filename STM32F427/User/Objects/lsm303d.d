@@ -1,5 +1,5 @@
 .\objects\lsm303d.o: ..\BSP\lsm303d.c
-.\objects\lsm303d.o: ..\BSP\lsm303d.h 
+.\objects\lsm303d.o: ..\BSP\lsm303d.h
 .\objects\lsm303d.o: ..\CMSIS\Device\ST\STM32F4xx\Include\stm32f4xx.h
 .\objects\lsm303d.o: ..\User\core_cm4.h
 .\objects\lsm303d.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
@@ -37,6 +37,6 @@
 .\objects\lsm303d.o: ..\STM32F4xx_Driver\inc\stm32f4xx_dma2d.h
 .\objects\lsm303d.o: ..\STM32F4xx_Driver\inc\stm32f4xx_fmc.h
 .\objects\lsm303d.o: ..\STM32F4xx_Driver\inc\stm32f4xx_sai.h
-.\objects\lsm303d.o: ..\BSP\spi.h
 .\objects\lsm303d.o: ..\BSP\delay.h
 .\objects\lsm303d.o: ..\BSP\sys.h
+.\objects\lsm303d.o: ..\BSP\spi.h

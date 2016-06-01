@@ -620,6 +620,11 @@
               <FileType>1</FileType>
               <FilePath>..\BSP\rc_process.c</FilePath>
             </File>
+            <File>
+              <FileName>key.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\key.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

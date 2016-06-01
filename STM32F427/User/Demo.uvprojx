@@ -14,6 +14,8 @@
         <TargetCommonOption>
           <Device>STM32F427VI</Device>
           <Vendor>STMicroelectronics</Vendor>
+          <PackID>Keil.STM32F4xx_DFP.2.6.0</PackID>
+          <PackURL>http://www.keil.com/pack</PackURL>
           <Cpu>IROM(0x08000000,0x200000) IRAM(0x20000000,0x30000) IRAM2(0x10000000,0x10000) CPUTYPE("Cortex-M4") FPU2 CLOCK(12000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
           <StartupFile></StartupFile>
@@ -82,6 +84,8 @@
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
+            <nStopA1X>0</nStopA1X>
+            <nStopA2X>0</nStopA2X>
           </AfterMake>
           <SelectedForBatchBuild>0</SelectedForBatchBuild>
           <SVCSIdString></SVCSIdString>
@@ -143,10 +147,9 @@
             <RestoreToolbox>1</RestoreToolbox>
             <RestoreTracepoints>1</RestoreTracepoints>
             <RestoreSysVw>1</RestoreSysVw>
-            <UsePdscDebugDescription>1</UsePdscDebugDescription>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>6</TargetSelection>
+          <TargetSelection>12</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -160,7 +163,7 @@
             <PeripheralDll></PeripheralDll>
             <PeripheralDllArguments></PeripheralDllArguments>
             <InitializationFile></InitializationFile>
-            <Driver>Segger\JL2CM3.dll</Driver>
+            <Driver>BIN\CMSIS_AGDI.dll</Driver>
           </TargetDlls>
         </DebugOption>
         <Utilities>
@@ -360,6 +363,8 @@
             <uSurpInc>0</uSurpInc>
             <uC99>0</uC99>
             <useXO>0</useXO>
+            <v6Lang>0</v6Lang>
+            <v6LangP>0</v6LangP>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F427_437xx, __FPU_PRESENT=1, __FPU_USED =1, ARM_MATH_CM4, __CC_ARM</Define>
@@ -618,11 +623,6 @@
               <FilePath>..\BSP\spi.c</FilePath>
             </File>
             <File>
-              <FileName>uart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\BSP\uart.c</FilePath>
-            </File>
-            <File>
               <FileName>mpu6000.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\mpu6000.c</FilePath>
@@ -636,11 +636,6 @@
               <FileName>delay.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\delay.c</FilePath>
-            </File>
-            <File>
-              <FileName>ms5611.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\BSP\ms5611.c</FilePath>
             </File>
             <File>
               <FileName>tim.c</FileName>
@@ -673,11 +668,6 @@
               <FilePath>..\BSP\spi2.c</FilePath>
             </File>
             <File>
-              <FileName>fm25v01.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\BSP\fm25v01.c</FilePath>
-            </File>
-            <File>
               <FileName>TCA62724.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\TCA62724.c</FilePath>
@@ -691,6 +681,11 @@
               <FileName>bsp.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\bsp.c</FilePath>
+            </File>
+            <File>
+              <FileName>PPM.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\PPM.c</FilePath>
             </File>
           </Files>
         </Group>

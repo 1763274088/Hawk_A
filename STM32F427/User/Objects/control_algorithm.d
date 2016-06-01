@@ -46,3 +46,4 @@
 .\objects\control_algorithm.o: ..\BSP\spi.h
 .\objects\control_algorithm.o: ..\BSP\communication.h
 .\objects\control_algorithm.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\math.h
+.\objects\control_algorithm.o: ..\User\PPM.h

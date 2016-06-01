@@ -5,79 +5,66 @@
 #include "futaba_sbus.h"
 
 
-//½ÓÊÕÀ´×ÔF4¿ØÖÆµç»ú±êÖ¾Î»
+//æ¥æ”¶æ¥è‡ªF4æ§åˆ¶ç”µæœºæ ‡å¿—ä½
 extern uint8_t motor_receive_mark;
 
-//µç»ú¿ØÖÆ½á¹¹Ìå
+//ç”µæœºæ§åˆ¶ç»“æ„ä½“
 _MOTOR_CONTROL motor_rc;
 
 extern uint8_t LED_give_table;
 
 extern uint8_t usart2_rx_buffer[14];
 
-extern int mode ;
+extern int mode;
 
-//ÅäÖÃ¶¨Ê±Æ÷1Îª1msÖĞ¶ÏÄ£Ê½
-void TIM1_Configuration(void)  
-{  
-    NVIC_InitTypeDef NVIC_InitStructure;  
-    TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;  
-  
-    TIM_DeInit(TIM1);                                          
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);       
-    TIM_TimeBaseStructure.TIM_Period = 100;                         
-    TIM_TimeBaseStructure.TIM_Prescaler = 720-1;                     
-    TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;             
-    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;  
-    TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStructure);  
-      
+//é…ç½®å®šæ—¶å™¨1ä¸º1msä¸­æ–­æ¨¡å¼
+void TIM1_Configuration(void) {
+    NVIC_InitTypeDef NVIC_InitStructure;
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;
 
-    TIM_ClearFlag(TIM1, TIM_FLAG_Update);                 
-    NVIC_InitStructure.NVIC_IRQChannel = TIM1_UP_IRQn;         
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;  
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;    
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;  
-    NVIC_Init(&NVIC_InitStructure);  
-    TIM_ITConfig(TIM1, TIM_IT_Update, ENABLE);   
-		TIM_Cmd(TIM1, ENABLE);   	
-}  
+    TIM_DeInit(TIM1);
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
+    TIM_TimeBaseStructure.TIM_Period = 100;
+    TIM_TimeBaseStructure.TIM_Prescaler = 720 - 1;
+    TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+    TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStructure);
 
 
-void TIM1_UP_IRQHandler(void)
-{
-	
-	if (TIM_GetITStatus(TIM1, TIM_IT_Update) != RESET) 
-	{	
-    TIM_ClearITPendingBit(TIM1, TIM_IT_Update);		
-		time_1_task_ms++;
-		time_2_task_ms++;
-		time_3_task_ms++;
-		
-		if(time_1_task_ms==2)
-		{
-			time_1_task_ms=0;
-			
-			if(motor_receive_mark==1)
-			{
-			//°Ñ´¦ÀíÖ®ºóµÄÎŞË¢µç»úPWMÖµ¿ØÖÆµç»ú
-			motor_set_pwm_value(motor_rc.info.Control_value);
-			//Çåµô½ÓÊÕ±êÖ¾Î»
-			motor_receive_mark=0;
-			}
-			if(LED_give_table==1)
-			{
-			GPIO_ResetBits(GPIOB,GPIO_Pin_13);						 //PB.13 Êä³ö¸ß
-			}
-			
-			if(mode==1)
-			{
-			GPIO_ResetBits(GPIOB,GPIO_Pin_15);						 //PB.15 Êä³ö¸ß
-			}
-				
-		}
-		
-	}
-	
+    TIM_ClearFlag(TIM1, TIM_FLAG_Update);
+    NVIC_InitStructure.NVIC_IRQChannel = TIM1_UP_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+    TIM_ITConfig(TIM1, TIM_IT_Update, ENABLE);
+    TIM_Cmd(TIM1, ENABLE);
+}
+
+
+void TIM1_UP_IRQHandler(void) { 	// å®šæ—¶å™¨ä¸­æ–­å…¥å£
+
+    if (TIM_GetITStatus(TIM1, TIM_IT_Update) != RESET) {
+        TIM_ClearITPendingBit(TIM1, TIM_IT_Update); 		// æ¸…é™¤æ ‡å¿—ä½
+        time_1_task_ms++;
+        time_2_task_ms++;
+        time_3_task_ms++;
+        if (time_1_task_ms == 2) {
+            time_1_task_ms = 0;
+            if (motor_receive_mark == 1) {
+                //æŠŠå¤„ç†ä¹‹åçš„æ— åˆ·ç”µæœºPWMå€¼æ§åˆ¶ç”µæœº
+                motor_set_pwm_value(motor_rc.info.Control_value);
+                //æ¸…æ‰æ¥æ”¶æ ‡å¿—ä½
+                motor_receive_mark = 0;
+            }
+            if (LED_give_table == 1) {
+                GPIO_ResetBits(GPIOB, GPIO_Pin_13);		//PB.13 è¾“å‡ºé«˜
+            }
+            if (mode == 1) {
+                GPIO_ResetBits(GPIOB, GPIO_Pin_15);		//PB.15 è¾“å‡ºé«˜
+            }
+        }
+    }
 }
 
 

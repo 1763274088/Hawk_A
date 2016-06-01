@@ -889,12 +889,13 @@ ARM Macro Assembler    Page 14
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M4.fp --apcs=int
 erwork --depend=.\objects\startup_stm32f427_437xx.d -o.\objects\startup_stm32f4
-27_437xx.o -I"D:\fly\Hawk A keil∞Ê≤‚ ‘¥˙¬Î\STM32F427\User\RTE" -IC:\Keil_v5\ARM
-\PACK\Keil\STM32F4xx_DFP\2.6.0\Drivers\CMSIS\Device\ST\STM32F4xx\Include -IC:\K
-eil_v5\ARM\CMSIS\Include -IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.6.0\Device\
-Include --predefine="__MICROLIB SETA 1" --predefine="__UVISION_VERSION SETA 515
-" --predefine="STM32F427xx SETA 1" --list=.\listings\startup_stm32f427_437xx.ls
-t ..\CMSIS\Device\ST\STM32F4xx\Source\Templates\arm\startup_stm32f427_437xx.s
+27_437xx.o -I"C:\Users\YTAO\Desktop\Hawk A keil∞Ê≤‚ ‘¥˙¬Î\Hawk_A\STM32F427\User
+\RTE" -IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.6.0\Drivers\CMSIS\Device\ST\ST
+M32F4xx\Include -IC:\Keil_v5\ARM\CMSIS\Include -IC:\Keil_v5\ARM\PACK\Keil\STM32
+F4xx_DFP\2.6.0\Device\Include --predefine="__MICROLIB SETA 1" --predefine="__UV
+ISION_VERSION SETA 515" --predefine="STM32F427xx SETA 1" --list=.\listings\star
+tup_stm32f427_437xx.lst ..\CMSIS\Device\ST\STM32F4xx\Source\Templates\arm\start
+up_stm32f427_437xx.s
 
 
 

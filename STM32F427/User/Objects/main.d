@@ -58,3 +58,4 @@
 .\objects\main.o: ..\BSP\communication.h
 .\objects\main.o: ..\Algorithm\Math_Algorithm.h
 .\objects\main.o: ..\Algorithm\Control_Algorithm.h
+.\objects\main.o: PPM.h

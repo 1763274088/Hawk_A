@@ -2,398 +2,338 @@
 #include "Math_Algorithm.h"
 #include "communication.h"
 #include "uart.h"
-#include<math.h>
-#define RtA 		57.324841					//»¡¶È×ª³É½Ç¶ÈÏµÊı
+#include <math.h>
+#include "PPM.h"
 
-extern _sensor Gyro_sensor;				//ÍÓÂİÒÇ½á¹¹Ìå
+#define RtA 57.324841f		//å¼§åº¦è½¬æˆè§’åº¦ç³»æ•°
 
-//µç»úÍ¨µÀÖµ
-uint16_t Motor_channel[6]={0,0,0,0,0,0};
+extern _sensor Gyro_sensor;		    //é™€èºä»ªç»“æ„ä½“
+extern float ROLL, YAW, PIT, HALF_T;//
+extern _MOTOR_CONTROL motor_tc;     //æ§åˆ¶ç”µæœºè½¬é€Ÿçš„ç»“æ„ä½“
+extern _F4_to_PPM_ F4_to_PPM_BUF;   //å¼•å…¥F4å‘PPMå‘é€çš„æ•°æ®è”åˆä½“
+extern _PPM_to_F4_ PPM_to_F4_BUF;   //å¼•å…¥PPMå‘F4å‘é€çš„æ•°æ®è”åˆä½“
 
-/*------------------µç»ú×îµÍÊı--------------------*/
-#define Low_value 2000
+uint16_t Motor_channel[4] = {0, 0, 0, 0};   //ç”µæœºé€šé“å€¼
 
+#define Low_value           2000    //ç”µæœºæœ€ä½è½¬æ•°
+#define Motor_Max_output	4000    //ç”µæœºæœ€é«˜è½¬æ•°
+#define pitch_increment_max	200     //å¤–ç¯ç§¯åˆ†å¢é‡é™å¹…
+#define roll_increment_max	200     //å¤–ç¯ç§¯åˆ†å¢é‡é™å¹…
+#define Altiude_min			330     //èµ·é£æœ€ä½æ²¹é—¨å€¼
 
-#define Motor_Max_output 2800
+uint8_t Altiude_min_table = 0;      //æœ€ä½èµ·é£æ²¹é—¨æ ‡å¿—ä½
 
+target_InitTypeDef control_target_value;    //å®šä¹‰ä¸€ä¸ªç›®æ ‡ç»“æ„ä½“
 
-//Íâ»·»ı·ÖÔöÁ¿ÏŞ·ù
-#define	pitch_increment_max			200
-#define	roll_increment_max			200
+//####################################################//
+/*
+æ ¹æ®æ¥æ”¶F1ä¼ è¾“å›æ¥çš„ç›®æ ‡é‡ï¼Œè¿›è¡Œç›¸å¯¹åº”çš„æ“ä½œï¼Œä¼˜åŒ–ç›®æ ‡
+æ§åˆ¶é‡
+*/
+//####################################################//
 
+//è¾“å…¥ï¼šä»ä¸²å£USART3å‘é€è¿‡æ¥çš„
+//è¾“å‡ºï¼šå¤„ç†ä¹‹åçš„ç›®æ ‡å€¼
+//æ³¨æ„ï¼šyawè½´è¦è¿›è¡Œè¡¥å…¨å¤„ç†
+void Calculate_target_amount(void) {
+    int16_t yaw_difference;
 
-//
-extern _REMOTE_RECEIVE	RC_bf;
+    //ä¿å­˜é¥æ§å™¨å¤„ç†ä¹‹åçš„ç›®æ ‡å€¼
+    control_target_value.target_Pitch    = PPM_to_F4_BUF.DATA.Pit;
+    control_target_value.target_Roll     = PPM_to_F4_BUF.DATA.Rol;
+    control_target_value.target_Altitude = PPM_to_F4_BUF.DATA.mode_Altiude & 0x0FFF;
 
-//Æğ·É×îµÍÓÍÃÅÖµ
-#define Altiude_min	330
-
-//×îµÍÆğ·ÉÓÍÃÅ±êÖ¾Î»
-uint8_t Altiude_min_table=0;
-
-
-//¶¨ÒåÒ»¸öÄ¿±ê½á¹¹Ìå
-target_InitTypeDef	control_target_value;
-
-//===================================================================//
-		//####################################################//
-		/*
-		¸ù¾İ½ÓÊÕF1´«Êä»ØÀ´µÄÄ¿±êÁ¿£¬½øĞĞÏà¶ÔÓ¦µÄ²Ù×÷£¬ÓÅ»¯Ä¿±ê
-		¿ØÖÆÁ¿
-		*/
-		//####################################################//
-
-		//ÊäÈë£ºF1´«Êä»ØÀ´µÄpitch¡¢roll¡¢yaw¡¢ÓÍÃÅµÈµÈÊıÖµ
-		//Êä³ö£º´¦ÀíÖ®ºóµÄÄ¿±êÖµ
-		//×¢Òâ£ºyawÖáÒª½øĞĞ²¹È«´¦Àí
-void Calculate_target_amount(void)
-{
-		int16_t	yaw_difference;
-	
-		//±£´æÒ£¿ØÆ÷´¦ÀíÖ®ºóµÄÄ¿±êÖµ
-		control_target_value.target_Pitch=RC_bf.control_target.Pitch;
-		control_target_value.target_Roll=RC_bf.control_target.Roll;
-		control_target_value.target_Altitude=RC_bf.control_target.Altiude;	
-		
-		//======================================================================//
-		//YAWÖáµÄÊı¾İ±È½ÏÌØÊâ£¬ĞèÒª½øĞĞ´¦Àí	
-		//µ±ÓÍÃÅµÍÓÚ×îĞ¡Æğ·ÉÓÍÃÅÊ±£¬´ËÊ±µÄº½Ïò×÷ÎªÄ¿±êº½Ïò
-		if(control_target_value.target_Altitude>Altiude_min)
-		{
-		if(Altiude_min_table!=1)
-		{
-		Altiude_min_table=1;
-		control_target_value.target_Yaw=YAW;	
-		}
-		}
-		else
-		{
-		Altiude_min_table=0;
-		control_target_value.target_Yaw=YAW;	
-		}
-		
-		//º½ÏòÉèÖÃÒ»¸öËÀÇø
-		if(RC_bf.control_target.Yaw>1100||RC_bf.control_target.Yaw<900)
-		{
-		yaw_difference=1000-RC_bf.control_target.Yaw;
-		control_target_value.target_Yaw+=(yaw_difference/200.0f)*0.05f;	
-		
-		if(control_target_value.target_Yaw>180.0f)
-		{
-			control_target_value.target_Yaw-=360.0f;
-		}
-		else
-			if(control_target_value.target_Yaw<-180.0f)
-				control_target_value.target_Yaw+=360.0f;
-		
-		}
-	
-		//======================================================================//	
-	
-}
-//===================================================================//
-
-
-
-
-
-
-//===================================================================//
-		//####################################################//
-		/*
-		¿ØÖÆËã·¨Ö÷Òª²ÉÓÃ´®¼¶¿ØÖÆ£¬ÄÚ»·Îª½ÇËÙ¶È»·£¬Íâ»·Îª½Ç¶È»·¡£
-		ÄÚ»·µÄÖ÷Òª×÷ÓÃÊÇ£º¼°Ê±ÏìÓ¦·É»úµÄ·ÉĞĞ±ä»¯£¬±ÈÈç×ËÌ¬Æ«ÒÆµÄ
-		»Ø¸´ËÙ¶È£¬·ÉĞĞ×´Ì¬µÄ±ä»¯ËÙ¶ÈµÈµÈ¡£
-		Íâ»·µÄÖ÷Òª×÷ÓÃÊÇ£º±£Ö¤·É»úµÄ×ËÌ¬ÎÈ¶¨£¬¿ØÖÆ·É»úµÄ·ÉĞĞ×ËÌ¬£¬
-		¼õĞ¡×ËÌ¬Îó²î¡£
-		*/
-		//####################################################//
-
-//Ö´ĞĞÆµÂÊ±êÖ¾Î»
-uint8_t execute_frequency=0;
-
-//Íâ»·£º½Ç¶È»·
-//ÊäÈë£ºÒ£¿ØÆ÷µÈ×ËÌ¬¿ØÖÆ
-//·´À¡Á¿£º×ËÌ¬½âËãµÄ½Ç¶ÈÖµ
-//Êä³öÁ¿£ºĞèÒªµÄ²¹³¥Öµ
-//²ÉÓÃPID
-void Angle_Control_loop(void)
-{
-	execute_frequency++;
-
-	//4msÖÜÆÚÒ»´Î
-	if(execute_frequency>= 2)
-	{
-		//************************PITCH²¿·Ö¿ØÖÆ************************//
-		//Îó²î²¿·Ö£ºÒ£¿ØÆ÷µÄÄ¿±êÖµ×÷Îª¿ØÖÆÄ¿±ê£¬×ËÌ¬½âËãµÄ½Ç¶ÈÖµ×÷Îª·´À¡Ä¿±ê
-		Outside_link.Pitch_ErrNow=PIT-control_target_value.target_Pitch;
-		
-		//ÔöÁ¿²¿·Ö£º¶ÔÎó²î½øĞĞÀÛ¼Ó²Ù×÷
-		Outside_link.Pitch_increment+=Outside_link.Pitch_ErrNow;
-		
-		//±ÈÀı²¿·Ö:	ÏµÊı³ËÒÔÎó²îÖµ£¬×÷Îª±ÈÀı¿ØÖÆ
-		Outside_link.Pitch_ErrP_out=Outside_link.Pitch_kp*Outside_link.Pitch_ErrNow;
-		
-		//»ı·ÖÏŞ·ù²¿·Ö£º¶ÔÔöÁ¿½øĞĞÏŞ·ù£¬ÒÖÖÆ»ı·Ö±¥ºÍ
-			if(Outside_link.Pitch_increment > Outside_link.Pitch_ErrILim)  	
-				Outside_link.Pitch_increment = Outside_link.Pitch_ErrILim;
-			else if(Outside_link.Pitch_increment < -(Outside_link.Pitch_ErrILim))		
-				Outside_link.Pitch_increment = -(Outside_link.Pitch_ErrILim);
-		
-		//»ı·Ö²¿·Ö£ºÏµÊı³ËÒÔ»ı·ÖÔöÁ¿£¬×÷Îª»ı·Ö
-		Outside_link.Pitch_ErrI_out=Outside_link.Pitch_ki*Outside_link.Pitch_increment;	
-		
-		//Î¢·Ö²¿·Ö:	ÓÃÀúÊ·Öµ×÷Îª¿ØÖÆ
-		Outside_link.Pitch_ErrD_out=Outside_link.Pitch_kd*(Outside_link.Pitch_ErrNow-Outside_link.Pitch_Errpast);
-		
-		//Êä³ö²¿·Ö£º½«±ÈÀı¡¢»ı·Ö¡¢Î¢·ÖµÄÊä³öÖµ½øĞĞÀÛ¼Ó²Ù×÷
-		Outside_link.Pitch_CtrOut=Outside_link.Pitch_ErrP_out+Outside_link.Pitch_ErrI_out+Outside_link.Pitch_ErrD_out;
-		Outside_link.Pitch_CtrOut=-Outside_link.Pitch_CtrOut;	
-			
-		//ÀúÊ·Öµ²¿·Ö£º±£´æÕâÊ±¿ÌµÄÎó²î			
-		Outside_link.Pitch_Errpast=Outside_link.Pitch_ErrNow;	
-		//*************************************************************//
-
-			
-		//************************Roll²¿·Ö¿ØÖÆ************************//
-		//Îó²î²¿·Ö£ºÒ£¿ØÆ÷µÄÄ¿±êÖµ×÷Îª¿ØÖÆÄ¿±ê£¬×ËÌ¬½âËãµÄ½Ç¶ÈÖµ×÷Îª·´À¡Ä¿±ê
-		Outside_link.Roll_ErrNow=ROLL-control_target_value.target_Roll;
-		//ÔöÁ¿²¿·Ö£º¶ÔÎó²î½øĞĞÀÛ¼Ó²Ù×÷
-		Outside_link.Roll_increment+=Outside_link.Roll_ErrNow;
-		
-		//±ÈÀı²¿·Ö:	ÏµÊı³ËÒÔÎó²îÖµ£¬×÷Îª±ÈÀı¿ØÖÆ
-		Outside_link.Roll_ErrP_out=Outside_link.Roll_kp*Outside_link.Roll_ErrNow;
-		
-		//»ı·ÖÏŞ·ù²¿·Ö£º¶ÔÔöÁ¿½øĞĞÏŞ·ù£¬ÒÖÖÆ»ı·Ö±¥ºÍ
-			if(Outside_link.Roll_increment > Outside_link.Roll_ErrILim)  	
-				Outside_link.Roll_increment = Outside_link.Roll_ErrILim;
-			else if(Outside_link.Roll_increment < -(Outside_link.Roll_ErrILim))		
-				Outside_link.Roll_increment = -(Outside_link.Roll_ErrILim);
-		
-		//»ı·Ö²¿·Ö£ºÏµÊı³ËÒÔ»ı·ÖÔöÁ¿£¬×÷Îª»ı·Ö
-		Outside_link.Roll_ErrI_out=Outside_link.Roll_ki*Outside_link.Roll_increment;	
-		
-		//Î¢·Ö²¿·Ö:	ÓÃÀúÊ·Öµ×÷Îª¿ØÖÆ
-		Outside_link.Roll_ErrD_out=Outside_link.Roll_kd*(Outside_link.Roll_ErrNow-Outside_link.Roll_Errpast);
-		
-		//Êä³ö²¿·Ö£º½«±ÈÀı¡¢»ı·Ö¡¢Î¢·ÖµÄÊä³öÖµ½øĞĞÀÛ¼Ó²Ù×÷
-		Outside_link.Roll_CtrOut=Outside_link.Roll_ErrP_out+Outside_link.Roll_ErrI_out+Outside_link.Roll_ErrD_out;
-		Outside_link.Roll_CtrOut=-Outside_link.Roll_CtrOut;	
-			
-		//ÀúÊ·Öµ²¿·Ö£º±£´æÕâÊ±¿ÌµÄÎó²î			
-		Outside_link.Roll_Errpast=Outside_link.Roll_ErrNow;	
-		//*************************************************************//
-
-				
-		//************************Yaw²¿·Ö¿ØÖÆ************************//
-		//ÏÈ¶ÔYawÖá×öÒ»Ğ©´¦Àí,ÔÚ½øĞĞËã·¨µÄÔËËã
-		 if((control_target_value.target_Yaw- YAW)>180 || (control_target_value.target_Yaw - YAW)<-180)
-		{
-       if(control_target_value.target_Yaw>0 && YAW<0)  Outside_link.Yaw_ErrNow= (-180 - YAW) +(control_target_value.target_Yaw - 180);
-       if(control_target_value.target_Yaw<0 && YAW>0)  Outside_link.Yaw_ErrNow= (180 - YAW) +(control_target_value.target_Yaw+ 180);
+    //======================================================================//
+    //YAWè½´çš„æ•°æ®æ¯”è¾ƒç‰¹æ®Šï¼Œéœ€è¦è¿›è¡Œå¤„ç†
+    //å½“æ²¹é—¨ä½äºæœ€å°èµ·é£æ²¹é—¨æ—¶ï¼Œæ­¤æ—¶çš„èˆªå‘ä½œä¸ºç›®æ ‡èˆªå‘
+    if (control_target_value.target_Altitude > Altiude_min) {
+        if (Altiude_min_table != 1) {
+            Altiude_min_table = 1;
+            control_target_value.target_Yaw = YAW;
+        }
     }
-    else  Outside_link.Yaw_ErrNow = control_target_value.target_Yaw - YAW;
-		
-		//±ÈÀı²¿·Ö:	ÏµÊı³ËÒÔÎó²îÖµ£¬×÷Îª±ÈÀı¿ØÖÆ
-		Outside_link.Yaw_ErrP_out=Outside_link.Yaw_kp*Outside_link.Roll_ErrNow;
-		
-		//Î¢·Ö²¿·Ö:	ÓÃÀúÊ·Öµ×÷Îª¿ØÖÆ
-		Outside_link.Yaw_ErrD_out=Outside_link.Yaw_kd*(Outside_link.Yaw_ErrNow-Outside_link.Yaw_Errpast);
-		
-		//Êä³ö²¿·Ö£º½«±ÈÀı¡¢Î¢·ÖµÄÊä³öÖµ½øĞĞÀÛ¼Ó²Ù×÷
-		Outside_link.Yaw_CtrOut=Outside_link.Yaw_ErrP_out+Outside_link.Yaw_ErrD_out;
-		
-		//ÀúÊ·Öµ²¿·Ö£º±£´æÕâÊ±¿ÌµÄÎó²î	
-		Outside_link.Yaw_Errpast=Outside_link.Yaw_ErrNow;
-		//*************************************************************//
-			
-    execute_frequency = 0; 	
-	}
+    else {
+        Altiude_min_table = 0;
+        control_target_value.target_Yaw = YAW;
+    }
 
-}
+    //èˆªå‘è®¾ç½®ä¸€ä¸ªæ­»åŒº
+    if (PPM_to_F4_BUF.DATA.Yaw > 90 || PPM_to_F4_BUF.DATA.Yaw < -90) {
+        yaw_difference = 1000 - PPM_to_F4_BUF.DATA.Yaw;
+        control_target_value.target_Yaw += (yaw_difference / 200.0f) * 0.05f;
 
+        if (control_target_value.target_Yaw > 180.0f) {
+            control_target_value.target_Yaw -= 360.0f;
+        }
+        else if (control_target_value.target_Yaw < -180.0f)
+            control_target_value.target_Yaw += 360.0f;
 
-
-//ÄÚ»·£º½ÇËÙ¶È»·
-//ÊäÈë£ºÍâ»·µÄÊä³ö
-//·´À¡Á¿£ºÍÓÂİÒÇµÄ½ÇËÙ¶ÈÖµ
-//Êä³öÁ¿£ºÎŞË¢µç»úµÄ¿ØÖÆÁ¿
-//²ÉÓÃPD¿ØÖÆ
-void Angle_speed_control_loop(void)
-{
-		//************************PITCH²¿·Ö¿ØÖÆ************************//
-		//Îó²î²¿·Ö£ºÍâ»·µÄÊä³ö×÷ÎªÄ¿±êÁ¿£¬ÍÓÂİÒÇµÄ½ÇËÙ¶È×÷Îª·´À¡Á¿
-		Inside_link.Pitch_ErrNow=(Outside_link.Pitch_CtrOut-Gyro_sensor.radian[1]*RtA);
-		//±ÈÀı²¿·Ö:	ÏµÊı³ËÒÔÎó²îÖµ£¬×÷Îª±ÈÀı¿ØÖÆ
-		Inside_link.Pitch_ErrP_out=Inside_link.Pitch_kp	*	Inside_link.Pitch_ErrNow;
-		//Î¢·Ö²¿·Ö:	ÓÃÍÓÂİÒÇµÄ½ÇËÙ¶È×÷ÎªÎ¢·Ö»·½Ú¿ØÖÆ£¬ÏìÓ¦¸ü¿ì£¬¿ØÖÆ¸üÆ½»¬
-		Inside_link.Pitch_ErrD_out=Inside_link.Pitch_kd*(Inside_link.Pitch_Errpast-	Gyro_sensor.Filter[1]);
-		//*************************************************************//
-
-		//************************ROLL²¿·Ö¿ØÖÆ*************************//
-		//Îó²î²¿·Ö£ºÍâ»·µÄÊä³ö×÷ÎªÄ¿±êÁ¿£¬ÍÓÂİÒÇµÄ½ÇËÙ¶È×÷Îª·´À¡Á¿
-		Inside_link.Roll_ErrNow=(Outside_link.Roll_CtrOut-Gyro_sensor.radian[0]*RtA);
-		//±ÈÀı²¿·Ö:	ÏµÊı³ËÒÔÎó²îÖµ£¬×÷Îª±ÈÀı¿ØÖÆ
-		Inside_link.Roll_ErrP_out=Inside_link.Roll_kp	*	Inside_link.Roll_ErrNow;
-		//Î¢·Ö²¿·Ö:	ÓÃÍÓÂİÒÇµÄ½ÇËÙ¶È×÷ÎªÎ¢·Ö»·½Ú¿ØÖÆ£¬ÏìÓ¦¸ü¿ì£¬¿ØÖÆ¸üÆ½»¬
-		Inside_link.Roll_ErrD_out=Inside_link.Roll_kd*(Inside_link.Roll_Errpast-	Gyro_sensor.Filter[0]);
-		//*************************************************************//
-	
-		//************************Yaw²¿·Ö¿ØÖÆ**************************//
-		//Îó²î²¿·Ö£ºÍâ»·µÄÊä³ö×÷ÎªÄ¿±êÁ¿£¬ÍÓÂİÒÇµÄ½ÇËÙ¶È×÷Îª·´À¡Á¿
-		Inside_link.Yaw_ErrNow=(Outside_link.Yaw_CtrOut-Gyro_sensor.radian[2]*RtA);
-		//±ÈÀı²¿·Ö:	ÏµÊı³ËÒÔÎó²îÖµ£¬×÷Îª±ÈÀı¿ØÖÆ
-		Inside_link.Yaw_ErrP_out=Inside_link.Yaw_kp	*	Inside_link.Yaw_ErrNow;
-		//Î¢·Ö²¿·Ö:	ÓÃÍÓÂİÒÇµÄ½ÇËÙ¶È×÷ÎªÎ¢·Ö»·½Ú¿ØÖÆ£¬ÏìÓ¦¸ü¿ì£¬¿ØÖÆ¸üÆ½»¬
-		Inside_link.Yaw_ErrD_out=Inside_link.Yaw_kd*(Inside_link.Yaw_Errpast-	Gyro_sensor.Filter[2]);
-		//*************************************************************//
-	
-		//************************Êä³ö¿ØÖÆ²¿·Ö*************************//	
-		Inside_link.Pitch_CtrOut	=Inside_link.Pitch_ErrP_out	+	Inside_link.Pitch_ErrD_out;
-		Inside_link.Roll_CtrOut		=Inside_link.Roll_ErrP_out	+	Inside_link.Roll_ErrD_out;
-		Inside_link.Yaw_CtrOut		=Inside_link.Yaw_ErrP_out		+	Inside_link.Yaw_ErrD_out;
-		//*************************************************************//
-		
-		//*********************±£´æÉÏÒ»´ÎµÄ½ÇËÙ¶ÈÖµ********************//
-		Inside_link.Pitch_Errpast	=	Gyro_sensor.Filter[1];	
-		Inside_link.Roll_Errpast	=	Gyro_sensor.Filter[0];
-		Inside_link.Yaw_Errpast		=	Gyro_sensor.Filter[2];			
-		//*************************************************************//
-}
-
-//===================================================================//
-
-
-
-
-
-
-
-//===================================================================//
-		//####################################################//
-		/*
-			¸ù¾İ´®¼¶PID¿ØÖÆ£¬¼ÆËã³öËùĞèÒªµÄµç»úÊä³öÁ¿£¬ÔÙ¸ù¾İ¶ÔÓ¦µÄ»úĞÍ£¬ÉèÖÃ
-			²»Í¬µÄÊä³ö£¬È»ºóÃ¿¸öµç»ú¸ù¾İ¸÷×ÔµÄÊä³öÖµ½øĞĞ¶¯×÷£¬´ïµ½ËùĞèÒªµÄ¿ØÖÆ
-			Ğ§¹û¡£
-		*/
-		//####################################################//
-
-		//ÊäÈë£º¼ÆËã³öËùĞèµÄÓÍÃÅ¡¢Pitch¡¢Roll¡¢YawµÄÖµ
-		//Êä³ö£ºÎŞË¢µç»úµÄPWMÖµ
-		//×¢Òâ£ºÓÍÃÅ½øĞĞÏà¶ÔÓ¦µÄ²¹³¥´¦Àí£¬»¹ÓĞÆ½»¬´¦Àí
-		
-		int16_t Pitch_output,Roll_output,Yaw_output,Throttle;
-		int	Throttle_value;		
-void Motor_Control(void)
-{
-		uint8_t count;
-	
-		//µÃµ½ËùĞèÒªµÄ¿ØÖÆÁ¿
-		Pitch_output	=Inside_link.Pitch_CtrOut;
-		Roll_output		=Inside_link.Roll_CtrOut;
-		Yaw_output		=Inside_link.Yaw_CtrOut;
-		Throttle			=control_target_value.target_Altitude+1600;
-		Throttle_value=Throttle;
-		
-//		Throttle=Throttle/cos(ROLL/RtA)/cos(PIT/RtA);
-	
-		//Æğ·ÉÓÍÃÅ´¦Àí£ºµ±ÓÍÃÅ´óÓÚÆğ·ÉÓÍÃÅÊ±£¬²Å½øĞĞ¶ÔÓ¦µÄ¿ØÖÆ
-		if(Throttle>2100)
-		{
-		 Motor_channel[0]=Throttle_value	+	Pitch_output	-	0.414*Roll_output			+	Yaw_output;
-		 Motor_channel[1]=Throttle_value									-	Roll_output						-	Yaw_output;
-		 Motor_channel[2]=Throttle_value	-	Pitch_output	-	0.414*Roll_output			+	Yaw_output;
-		 Motor_channel[3]=Throttle_value	-	Pitch_output	+	0.414*Roll_output			-	Yaw_output;
-		 Motor_channel[4]=Throttle_value									+	Roll_output						+	Yaw_output;
-		 Motor_channel[5]=Throttle_value	+	Pitch_output	+	0.414*Roll_output			-	Yaw_output;		
-
-
-		//==============ÏŞ·ù´¦Àí===============//
-		for(count=0;count<6;count++)
-		{
-			if(Motor_channel[count]>=Motor_Max_output)
-				Motor_channel[count]=Motor_Max_output;
-		}			
-		//=====================================//	
-			
-		}
-		else
-		{
-		//µ±ÓÍÃÅµÍÓÚÆğ·ÉÓÍÃÅÊ±£¬ÇåµôpitchºÍrollÖáµÄ½Ç¶È»·»ı·ÖÔöÁ¿Öµ£¬²¢ÇÒÉèÖÃµç»úÊä³öÎª×îµÍÊä³ö
-		Motor_channel[0]=Motor_channel[1]=Motor_channel[2]=Motor_channel[3]=Motor_channel[4]=Motor_channel[5]=Low_value;
-		Outside_link.Pitch_increment	=0;
-		Outside_link.Roll_increment		=0;
-		}
-		
-
-		//ÓÍÃÅÉÏËø´¦Àí£ºµç»úÊä³öÎª0.
-//		Motor_channel[0]=Motor_channel[1]=Motor_channel[2]=Motor_channel[3]=Motor_channel[4]=Motor_channel[5]=0;
+    }
+    //======================================================================//
 }
 //===================================================================//
 
 
-
 //===================================================================//
-		//####################################################//
-		/*
-			°Ñµç»ú¿ØÖÆÖµ£¬·¢ËÍ³öÈ¥£¬°üÍ·Îª£º0xCC£¬°üÎ²ÊÇĞ£ÑéºÍ
-		*/
-		//####################################################//
+//####################################################//
+/*
+æ§åˆ¶ç®—æ³•ä¸»è¦é‡‡ç”¨ä¸²çº§æ§åˆ¶ï¼Œå†…ç¯ä¸ºè§’é€Ÿåº¦ç¯ï¼Œå¤–ç¯ä¸ºè§’åº¦ç¯ã€‚
+å†…ç¯çš„ä¸»è¦ä½œç”¨æ˜¯ï¼šåŠæ—¶å“åº”é£æœºçš„é£è¡Œå˜åŒ–ï¼Œæ¯”å¦‚å§¿æ€åç§»çš„
+å›å¤é€Ÿåº¦ï¼Œé£è¡ŒçŠ¶æ€çš„å˜åŒ–é€Ÿåº¦ç­‰ç­‰ã€‚
+å¤–ç¯çš„ä¸»è¦ä½œç”¨æ˜¯ï¼šä¿è¯é£æœºçš„å§¿æ€ç¨³å®šï¼Œæ§åˆ¶é£æœºçš„é£è¡Œå§¿æ€ï¼Œ
+å‡å°å§¿æ€è¯¯å·®ã€‚
+*/
+//####################################################//
 
-		//ÊäÈë£º¼ÆËã³öÀ´µÄµç»ú¿ØÖÆÖµ
-		//Êä³ö£ºÎŞË¢µç»úµÄPWMÖµ
-void Motor_Send_task(void)
-{
-		uint8_t check_sum;
-		uint8_t seng_length;
-	
-		//ÅäÖÃ·¢ËÍ½á¹¹Ìå
-		motor_tc.info.head=0xCC;
-		motor_tc.info.Control_value[0]=Motor_channel[0];
-		motor_tc.info.Control_value[1]=Motor_channel[1];	
-		motor_tc.info.Control_value[2]=Motor_channel[2];	
-		motor_tc.info.Control_value[3]=Motor_channel[3];	
-		motor_tc.info.Control_value[4]=Motor_channel[4];	
-		motor_tc.info.Control_value[5]=Motor_channel[5];	
-		
-		//Çó³ö·¢ËÍÊı¾İ°üµÄĞ£ÑéºÍ
-		check_sum=0;
-		for(seng_length=0;seng_length<13;seng_length++)
-		check_sum+=motor_tc.TX_buffer[seng_length];
-		
-		motor_tc.info.check=check_sum;
+//æ‰§è¡Œé¢‘ç‡æ ‡å¿—ä½
+uint8_t execute_frequency = 0;
 
-		//°Ñ¿ØÖÆÊı¾İ·¢ËÍ³öÈ¥
-		usart_send_data(14,	motor_tc.TX_buffer);
-//		usart3_send_data(14,	motor_tc.TX_buffer);
-	
+//å¤–ç¯ï¼šè§’åº¦ç¯
+//è¾“å…¥ï¼šé¥æ§å™¨ç­‰å§¿æ€æ§åˆ¶
+//åé¦ˆé‡ï¼šå§¿æ€è§£ç®—çš„è§’åº¦å€¼
+//è¾“å‡ºé‡ï¼šéœ€è¦çš„è¡¥å¿å€¼
+//é‡‡ç”¨PID
+void Angle_Control_loop(void) {
+    execute_frequency++;
+
+    //4mså‘¨æœŸä¸€æ¬¡
+    if (execute_frequency >= 2) {
+        //************************PITCHéƒ¨åˆ†æ§åˆ¶************************//
+        //è¯¯å·®éƒ¨åˆ†ï¼šé¥æ§å™¨çš„ç›®æ ‡å€¼ä½œä¸ºæ§åˆ¶ç›®æ ‡ï¼Œå§¿æ€è§£ç®—çš„è§’åº¦å€¼ä½œä¸ºåé¦ˆç›®æ ‡
+        Outside_link.Pitch_ErrNow = PIT - control_target_value.target_Pitch;
+
+        //å¢é‡éƒ¨åˆ†ï¼šå¯¹è¯¯å·®è¿›è¡Œç´¯åŠ æ“ä½œ
+        Outside_link.Pitch_increment += Outside_link.Pitch_ErrNow;
+
+        //æ¯”ä¾‹éƒ¨åˆ†:	ç³»æ•°ä¹˜ä»¥è¯¯å·®å€¼ï¼Œä½œä¸ºæ¯”ä¾‹æ§åˆ¶
+        Outside_link.Pitch_ErrP_out = Outside_link.Pitch_kp * Outside_link.Pitch_ErrNow;
+
+        //ç§¯åˆ†é™å¹…éƒ¨åˆ†ï¼šå¯¹å¢é‡è¿›è¡Œé™å¹…ï¼ŒæŠ‘åˆ¶ç§¯åˆ†é¥±å’Œ
+        if (Outside_link.Pitch_increment > Outside_link.Pitch_ErrILim)
+            Outside_link.Pitch_increment = Outside_link.Pitch_ErrILim;
+        else if (Outside_link.Pitch_increment < -(Outside_link.Pitch_ErrILim))
+            Outside_link.Pitch_increment = -(Outside_link.Pitch_ErrILim);
+
+        //ç§¯åˆ†éƒ¨åˆ†ï¼šç³»æ•°ä¹˜ä»¥ç§¯åˆ†å¢é‡ï¼Œä½œä¸ºç§¯åˆ†
+        Outside_link.Pitch_ErrI_out = Outside_link.Pitch_ki * Outside_link.Pitch_increment;
+
+        //å¾®åˆ†éƒ¨åˆ†:	ç”¨å†å²å€¼ä½œä¸ºæ§åˆ¶
+        Outside_link.Pitch_ErrD_out = Outside_link.Pitch_kd * (Outside_link.Pitch_ErrNow - Outside_link.Pitch_Errpast);
+
+        //è¾“å‡ºéƒ¨åˆ†ï¼šå°†æ¯”ä¾‹ã€ç§¯åˆ†ã€å¾®åˆ†çš„è¾“å‡ºå€¼è¿›è¡Œç´¯åŠ æ“ä½œ
+        Outside_link.Pitch_CtrOut =  Outside_link.Pitch_ErrP_out + Outside_link.Pitch_ErrI_out + Outside_link.Pitch_ErrD_out;
+        Outside_link.Pitch_CtrOut = -Outside_link.Pitch_CtrOut;
+
+        //å†å²å€¼éƒ¨åˆ†ï¼šä¿å­˜è¿™æ—¶åˆ»çš„è¯¯å·®
+        Outside_link.Pitch_Errpast = Outside_link.Pitch_ErrNow;
+        //*************************************************************//
+
+
+        //************************Rolléƒ¨åˆ†æ§åˆ¶************************//
+        //è¯¯å·®éƒ¨åˆ†ï¼šé¥æ§å™¨çš„ç›®æ ‡å€¼ä½œä¸ºæ§åˆ¶ç›®æ ‡ï¼Œå§¿æ€è§£ç®—çš„è§’åº¦å€¼ä½œä¸ºåé¦ˆç›®æ ‡
+        Outside_link.Roll_ErrNow = ROLL - control_target_value.target_Roll;
+        //å¢é‡éƒ¨åˆ†ï¼šå¯¹è¯¯å·®è¿›è¡Œç´¯åŠ æ“ä½œ
+        Outside_link.Roll_increment += Outside_link.Roll_ErrNow;
+
+        //æ¯”ä¾‹éƒ¨åˆ†:	ç³»æ•°ä¹˜ä»¥è¯¯å·®å€¼ï¼Œä½œä¸ºæ¯”ä¾‹æ§åˆ¶
+        Outside_link.Roll_ErrP_out = Outside_link.Roll_kp * Outside_link.Roll_ErrNow;
+
+        //ç§¯åˆ†é™å¹…éƒ¨åˆ†ï¼šå¯¹å¢é‡è¿›è¡Œé™å¹…ï¼ŒæŠ‘åˆ¶ç§¯åˆ†é¥±å’Œ
+        if (Outside_link.Roll_increment > Outside_link.Roll_ErrILim)
+            Outside_link.Roll_increment = Outside_link.Roll_ErrILim;
+        else if (Outside_link.Roll_increment < -(Outside_link.Roll_ErrILim))
+            Outside_link.Roll_increment = -(Outside_link.Roll_ErrILim);
+
+        //ç§¯åˆ†éƒ¨åˆ†ï¼šç³»æ•°ä¹˜ä»¥ç§¯åˆ†å¢é‡ï¼Œä½œä¸ºç§¯åˆ†
+        Outside_link.Roll_ErrI_out = Outside_link.Roll_ki * Outside_link.Roll_increment;
+
+        //å¾®åˆ†éƒ¨åˆ†:	ç”¨å†å²å€¼ä½œä¸ºæ§åˆ¶
+        Outside_link.Roll_ErrD_out = Outside_link.Roll_kd * (Outside_link.Roll_ErrNow - Outside_link.Roll_Errpast);
+
+        //è¾“å‡ºéƒ¨åˆ†ï¼šå°†æ¯”ä¾‹ã€ç§¯åˆ†ã€å¾®åˆ†çš„è¾“å‡ºå€¼è¿›è¡Œç´¯åŠ æ“ä½œ
+        Outside_link.Roll_CtrOut = Outside_link.Roll_ErrP_out + Outside_link.Roll_ErrI_out + Outside_link.Roll_ErrD_out;
+        Outside_link.Roll_CtrOut = -Outside_link.Roll_CtrOut;
+
+        //å†å²å€¼éƒ¨åˆ†ï¼šä¿å­˜è¿™æ—¶åˆ»çš„è¯¯å·®
+        Outside_link.Roll_Errpast = Outside_link.Roll_ErrNow;
+        //*************************************************************//
+
+        //************************Yawéƒ¨åˆ†æ§åˆ¶************************//
+        //å…ˆå¯¹Yawè½´åšä¸€äº›å¤„ç†,åœ¨è¿›è¡Œç®—æ³•çš„è¿ç®—
+        if ((control_target_value.target_Yaw - YAW) > 180 || (control_target_value.target_Yaw - YAW) < -180) {
+            if (control_target_value.target_Yaw > 0 && YAW < 0)
+                Outside_link.Yaw_ErrNow = (-180 - YAW) + (control_target_value.target_Yaw - 180);
+            if (control_target_value.target_Yaw < 0 && YAW > 0)
+                Outside_link.Yaw_ErrNow = ( 180 - YAW) + (control_target_value.target_Yaw + 180);
+        }
+        else
+            Outside_link.Yaw_ErrNow = control_target_value.target_Yaw - YAW;
+        //æ¯”ä¾‹éƒ¨åˆ†:	ç³»æ•°ä¹˜ä»¥è¯¯å·®å€¼ï¼Œä½œä¸ºæ¯”ä¾‹æ§åˆ¶
+        Outside_link.Yaw_ErrP_out = Outside_link.Yaw_kp * Outside_link.Roll_ErrNow;
+        
+        //å¾®åˆ†éƒ¨åˆ†:	ç”¨å†å²å€¼ä½œä¸ºæ§åˆ¶
+        Outside_link.Yaw_ErrD_out = Outside_link.Yaw_kd * (Outside_link.Yaw_ErrNow - Outside_link.Yaw_Errpast);
+        
+        //è¾“å‡ºéƒ¨åˆ†ï¼šå°†æ¯”ä¾‹ã€å¾®åˆ†çš„è¾“å‡ºå€¼è¿›è¡Œç´¯åŠ æ“ä½œ
+        Outside_link.Yaw_CtrOut = Outside_link.Yaw_ErrP_out + Outside_link.Yaw_ErrD_out;
+        
+        //å†å²å€¼éƒ¨åˆ†ï¼šä¿å­˜è¿™æ—¶åˆ»çš„è¯¯å·®
+        Outside_link.Yaw_Errpast = Outside_link.Yaw_ErrNow;
+        //*************************************************************//
+        execute_frequency = 0;
+    }
 }
 //===================================================================//
 
 
-void Motor_Send_stop_task(void)
-{
-		uint8_t check_sum;
-		uint8_t seng_length;
-	
-		//ÅäÖÃ·¢ËÍ½á¹¹Ìå
-		motor_tc.info.head=0xCC;
-		motor_tc.info.Control_value[0]=2000;
-		motor_tc.info.Control_value[1]=2000;	
-		motor_tc.info.Control_value[2]=2000;	
-		motor_tc.info.Control_value[3]=2000;	
-		motor_tc.info.Control_value[4]=2000;	
-		motor_tc.info.Control_value[5]=2000;	
-		
-		//Çó³ö·¢ËÍÊı¾İ°üµÄĞ£ÑéºÍ
-		check_sum=0;
-		for(seng_length=0;seng_length<13;seng_length++)
-		check_sum+=motor_tc.TX_buffer[seng_length];
-		
-		motor_tc.info.check=check_sum;
+//===================================================================//
+//å†…ç¯ï¼šè§’é€Ÿåº¦ç¯
+//è¾“å…¥ï¼šå¤–ç¯çš„è¾“å‡º
+//åé¦ˆé‡ï¼šé™€èºä»ªçš„è§’é€Ÿåº¦å€¼
+//è¾“å‡ºé‡ï¼šæ— åˆ·ç”µæœºçš„æ§åˆ¶é‡
+//é‡‡ç”¨PDæ§åˆ¶
+void Angle_speed_control_loop(void) {
+    //************************PITCHéƒ¨åˆ†æ§åˆ¶************************//
+    //è¯¯å·®éƒ¨åˆ†ï¼šå¤–ç¯çš„è¾“å‡ºä½œä¸ºç›®æ ‡é‡ï¼Œé™€èºä»ªçš„è§’é€Ÿåº¦ä½œä¸ºåé¦ˆé‡
+    Inside_link.Pitch_ErrNow = (Outside_link.Pitch_CtrOut - Gyro_sensor.radian[1] * RtA);
+    //æ¯”ä¾‹éƒ¨åˆ†:	ç³»æ•°ä¹˜ä»¥è¯¯å·®å€¼ï¼Œä½œä¸ºæ¯”ä¾‹æ§åˆ¶
+    Inside_link.Pitch_ErrP_out = Inside_link.Pitch_kp * Inside_link.Pitch_ErrNow;
+    //å¾®åˆ†éƒ¨åˆ†:	ç”¨é™€èºä»ªçš„è§’é€Ÿåº¦ä½œä¸ºå¾®åˆ†ç¯èŠ‚æ§åˆ¶ï¼Œå“åº”æ›´å¿«ï¼Œæ§åˆ¶æ›´å¹³æ»‘
+    Inside_link.Pitch_ErrD_out = Inside_link.Pitch_kd * (Inside_link.Pitch_Errpast - Gyro_sensor.Filter[1]);
+    //*************************************************************//
 
-		//°Ñ¿ØÖÆÊı¾İ·¢ËÍ³öÈ¥
-		usart_send_data(14,	motor_tc.TX_buffer);
-	
+    //************************ROLLéƒ¨åˆ†æ§åˆ¶*************************//
+    //è¯¯å·®éƒ¨åˆ†ï¼šå¤–ç¯çš„è¾“å‡ºä½œä¸ºç›®æ ‡é‡ï¼Œé™€èºä»ªçš„è§’é€Ÿåº¦ä½œä¸ºåé¦ˆé‡
+    Inside_link.Roll_ErrNow = (Outside_link.Roll_CtrOut - Gyro_sensor.radian[0] * RtA);
+    //æ¯”ä¾‹éƒ¨åˆ†:	ç³»æ•°ä¹˜ä»¥è¯¯å·®å€¼ï¼Œä½œä¸ºæ¯”ä¾‹æ§åˆ¶
+    Inside_link.Roll_ErrP_out = Inside_link.Roll_kp * Inside_link.Roll_ErrNow;
+    //å¾®åˆ†éƒ¨åˆ†:	ç”¨é™€èºä»ªçš„è§’é€Ÿåº¦ä½œä¸ºå¾®åˆ†ç¯èŠ‚æ§åˆ¶ï¼Œå“åº”æ›´å¿«ï¼Œæ§åˆ¶æ›´å¹³æ»‘
+    Inside_link.Roll_ErrD_out = Inside_link.Roll_kd * (Inside_link.Roll_Errpast - Gyro_sensor.Filter[0]);
+    //*************************************************************//
+
+    //************************Yawéƒ¨åˆ†æ§åˆ¶**************************//
+    //è¯¯å·®éƒ¨åˆ†ï¼šå¤–ç¯çš„è¾“å‡ºä½œä¸ºç›®æ ‡é‡ï¼Œé™€èºä»ªçš„è§’é€Ÿåº¦ä½œä¸ºåé¦ˆé‡
+    Inside_link.Yaw_ErrNow = (Outside_link.Yaw_CtrOut - Gyro_sensor.radian[2] * RtA);
+    //æ¯”ä¾‹éƒ¨åˆ†:	ç³»æ•°ä¹˜ä»¥è¯¯å·®å€¼ï¼Œä½œä¸ºæ¯”ä¾‹æ§åˆ¶
+    Inside_link.Yaw_ErrP_out = Inside_link.Yaw_kp * Inside_link.Yaw_ErrNow;
+    //å¾®åˆ†éƒ¨åˆ†:	ç”¨é™€èºä»ªçš„è§’é€Ÿåº¦ä½œä¸ºå¾®åˆ†ç¯èŠ‚æ§åˆ¶ï¼Œå“åº”æ›´å¿«ï¼Œæ§åˆ¶æ›´å¹³æ»‘
+    Inside_link.Yaw_ErrD_out = Inside_link.Yaw_kd * (Inside_link.Yaw_Errpast - Gyro_sensor.Filter[2]);
+    //*************************************************************//
+
+    //************************è¾“å‡ºæ§åˆ¶éƒ¨åˆ†*************************//
+    Inside_link.Pitch_CtrOut    = Inside_link.Pitch_ErrP_out + Inside_link.Pitch_ErrD_out;
+    Inside_link.Roll_CtrOut     = Inside_link.Roll_ErrP_out  + Inside_link.Roll_ErrD_out;
+    Inside_link.Yaw_CtrOut      = Inside_link.Yaw_ErrP_out   + Inside_link.Yaw_ErrD_out;
+    //*************************************************************//
+
+    //*********************ä¿å­˜ä¸Šä¸€æ¬¡çš„è§’é€Ÿåº¦å€¼********************//
+    Inside_link.Pitch_Errpast   = Gyro_sensor.Filter[1];
+    Inside_link.Roll_Errpast    = Gyro_sensor.Filter[0];
+    Inside_link.Yaw_Errpast     = Gyro_sensor.Filter[2];
+    //*************************************************************//
 }
 
+//####################################################//
+/*
+    æ ¹æ®ä¸²çº§PIDæ§åˆ¶ï¼Œè®¡ç®—å‡ºæ‰€éœ€è¦çš„ç”µæœºè¾“å‡ºé‡ï¼Œå†æ ¹æ®å¯¹åº”çš„æœºå‹ï¼Œè®¾ç½®
+    ä¸åŒçš„è¾“å‡ºï¼Œç„¶åæ¯ä¸ªç”µæœºæ ¹æ®å„è‡ªçš„è¾“å‡ºå€¼è¿›è¡ŒåŠ¨ä½œï¼Œè¾¾åˆ°æ‰€éœ€è¦çš„æ§åˆ¶
+    æ•ˆæœã€‚
+*/
+//####################################################//
+
+//è¾“å…¥ï¼šè®¡ç®—å‡ºæ‰€éœ€çš„æ²¹é—¨ã€Pitchã€Rollã€Yawçš„å€¼
+//è¾“å‡ºï¼šæ— åˆ·ç”µæœºçš„PWMå€¼
+//æ³¨æ„ï¼šæ²¹é—¨è¿›è¡Œç›¸å¯¹åº”çš„è¡¥å¿å¤„ç†ï¼Œè¿˜æœ‰å¹³æ»‘å¤„ç†
+
+int16_t Pitch_output, Roll_output, Yaw_output, Throttle;
+int Throttle_value;
+
+void Motor_Control(void) {
+    uint8_t count;
+	uint8_t a = 2;
+    //å¾—åˆ°æ‰€éœ€è¦çš„æ§åˆ¶é‡
+    Pitch_output = Inside_link.Pitch_CtrOut;
+    Roll_output = Inside_link.Roll_CtrOut;
+    Yaw_output = Inside_link.Yaw_CtrOut;
+    Throttle = (PPM_to_F4_BUF.DATA.mode_Altiude & 0x0FFF) + 1600;
+    Throttle_value = Throttle;
+
+    //èµ·é£æ²¹é—¨å¤„ç†ï¼šå½“æ²¹é—¨å¤§äºèµ·é£æ²¹é—¨æ—¶ï¼Œæ‰è¿›è¡Œå¯¹åº”çš„æ§åˆ¶
+    if (Throttle > 2100) {
+		Motor_channel[0] = Throttle_value - a * Pitch_output + a * Roll_output /*- Yaw_output*/;
+        Motor_channel[1] = Throttle_value + a * Pitch_output - a * Roll_output /*+ Yaw_output*/;
+		Motor_channel[2] = Throttle_value + a * Pitch_output + a * Roll_output /*- Yaw_output*/;
+        Motor_channel[3] = Throttle_value - a * Pitch_output - a * Roll_output /*+ Yaw_output*/;
+
+        //==============é™å¹…å¤„ç†===============//
+        for (count = 0; count < 6; count++) {
+            if (Motor_channel[count] >= Motor_Max_output)
+                Motor_channel[count] = Motor_Max_output;
+        }
+        //=====================================//
+    }
+    else {
+        //å½“æ²¹é—¨ä½äºèµ·é£æ²¹é—¨æ—¶ï¼Œæ¸…æ‰pitchå’Œrollè½´çš„è§’åº¦ç¯ç§¯åˆ†å¢é‡å€¼ï¼Œå¹¶ä¸”è®¾ç½®ç”µæœºè¾“å‡ºä¸ºæœ€ä½è¾“å‡º
+        Motor_channel[0] = Motor_channel[1] = Motor_channel[2] = Motor_channel[3] = Low_value;
+        Outside_link.Pitch_increment = 0;
+        Outside_link.Roll_increment = 0;
+    }
+
+}
+//===================================================================//
+
+
+
+//===================================================================//
+//####################################################//
+/*
+    æŠŠç”µæœºæ§åˆ¶å€¼ï¼Œå‘é€å‡ºå»ï¼ŒåŒ…å¤´ä¸ºï¼š0xCCï¼ŒåŒ…å°¾æ˜¯æ ¡éªŒå’Œ
+*/
+//####################################################//
+
+//è¾“å…¥ï¼šè®¡ç®—å‡ºæ¥çš„ç”µæœºæ§åˆ¶å€¼
+//è¾“å‡ºï¼šæ— åˆ·ç”µæœºçš„PWMå€¼
+void Motor_Send_task(void) {
+    uint8_t check_sum;
+    uint8_t seng_length;
+
+    //é…ç½®å‘é€ç»“æ„ä½“
+    motor_tc.info.head = 0xCC;
+    motor_tc.info.Control_value[0] = Motor_channel[0];
+    motor_tc.info.Control_value[1] = Motor_channel[1];
+    motor_tc.info.Control_value[2] = Motor_channel[2];
+    motor_tc.info.Control_value[3] = Motor_channel[3];
+
+    //æ±‚å‡ºå‘é€æ•°æ®åŒ…çš„æ ¡éªŒå’Œ
+    check_sum = 0;
+    for (seng_length = 0; seng_length < 13; seng_length++)
+        check_sum += motor_tc.TX_buffer[seng_length];
+    motor_tc.info.check = check_sum;
+
+    //æŠŠæ§åˆ¶æ•°æ®å‘é€å‡ºå»
+    usart6_send_data(14, motor_tc.TX_buffer);
+}
+//===================================================================//
+
+
+void Motor_Send_stop_task(void) {
+    uint8_t check_sum;
+    uint8_t seng_length;
+
+    //é…ç½®å‘é€ç»“æ„ä½“
+    motor_tc.info.head = 0xCC;
+    motor_tc.info.Control_value[0] = 2000;
+    motor_tc.info.Control_value[1] = 2000;
+    motor_tc.info.Control_value[2] = 2000;
+    motor_tc.info.Control_value[3] = 2000;
+
+    //æ±‚å‡ºå‘é€æ•°æ®åŒ…çš„æ ¡éªŒå’Œ
+    check_sum = 0;
+    for (seng_length = 0; seng_length < 13; seng_length++)
+        check_sum += motor_tc.TX_buffer[seng_length];
+
+    motor_tc.info.check = check_sum;
+
+    //æŠŠæ§åˆ¶æ•°æ®å‘é€å‡ºå»
+    usart6_send_data(14, motor_tc.TX_buffer);
+}

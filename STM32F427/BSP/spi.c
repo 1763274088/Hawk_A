@@ -1,76 +1,68 @@
 #include "spi.h"
 
-//SPI³õÊ¼»¯º¯Êı
-//ÊäÈë£ºvoid
-//Êä³ö£ºvoid
-void Spi_Init(void)
-{
-		//Define the corresponding structure
+//SPIåˆå§‹åŒ–å‡½æ•°
+//è¾“å…¥ï¼švoid
+//è¾“å‡ºï¼švoid
+
+void Spi_Init(void) {
+    //Define the corresponding structure
     GPIO_InitTypeDef GPIO_InitStructure;
-    SPI_InitTypeDef  SPI_InitStructure;
-	
-		//Open the appropriate Clock Peripherals
+    SPI_InitTypeDef SPI_InitStructure;
+
+    //Open the appropriate Clock Peripherals
     RCC_AHB1PeriphClockCmd(SPI1_GPIO_Peripherals, ENABLE);
     RCC_APB2PeriphClockCmd(SPI1_Peripherals, ENABLE);
 
-	    //SPI GPIO Configuration
+    //SPI GPIO Configuration
     GPIO_PinAFConfig(SPI1_GPIO_PORT, SPI1_SCLK_SOURCE, SPI1_GPIO_AF);
     GPIO_PinAFConfig(SPI1_GPIO_PORT, SPI1_MISO_SOURCE, SPI1_GPIO_AF);
     GPIO_PinAFConfig(SPI1_GPIO_PORT, SPI1_MOSI_SOURCE, SPI1_GPIO_AF);
-	
-    GPIO_InitStructure.GPIO_Pin   = SPI1_SCLK_PIN | SPI1_MISO_PIN | SPI1_MOSI_PIN;
-    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF;
+
+    GPIO_InitStructure.GPIO_Pin = SPI1_SCLK_PIN | SPI1_MISO_PIN | SPI1_MOSI_PIN;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_DOWN;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
     GPIO_Init(SPI1_GPIO_PORT, &GPIO_InitStructure);
-		GPIO_SetBits(SPI1_GPIO_PORT,SPI1_SCLK_PIN | SPI1_MISO_PIN | SPI1_MOSI_PIN);
-	
-		//SPI configuration
-		SPI_I2S_DeInit(SPI1);		
-		SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;  //SPIÉèÖÃÎªË«ÏßË«ÏòÈ«Ë«¹¤
-		SPI_InitStructure.SPI_Mode = SPI_Mode_Master;												//ÉèÖÃÎªÖ÷SPI
-		SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;										//SPI·¢ËÍ½ÓÊÕ8Î»Ö¡½á¹¹
-		//MPU6000¹Ù·½ÎÄµµÓĞ´í£¬Êµ¼ÊÊÇÈçÏÂÅäÖÃ		
-		SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;													//´®ĞĞÍ¬²½Ê±ÖÓµÄ¿ÕÏĞ×´Ì¬ÎªµÍµçÆ½
-		SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;												//´®ĞĞÍ¬²½Ê±ÖÓµÄµÚÒ»¸öÌø±äÑØ£¨ÉÏÉı»òÏÂ½µ£©Êı¾İ±»²ÉÑù
-		
-		SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;														//ÄÚ²¿NSSĞÅºÅÓĞSSIÎ»¿ØÖÆ
-		SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_64;	//²¨ÌØÂÊÔ¤·ÖÆµÖµÎª16
-		SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;									//Êı¾İ´«Êä´ÓMSBÎ»¿ªÊ¼
-		SPI_InitStructure.SPI_CRCPolynomial = 7;														//CRCÖµ¼ÆËãµÄ¶àÏîÊ½
-		SPI_Init(SPI1, &SPI_InitStructure);  																//¸ù¾İSPI_InitStructÖĞÖ¸¶¨µÄ²ÎÊı³õÊ¼»¯ÍâÉèSPIx¼Ä´æÆ÷
-		SPI_Cmd(SPI1, ENABLE);
+    GPIO_SetBits(SPI1_GPIO_PORT, SPI1_SCLK_PIN | SPI1_MISO_PIN | SPI1_MOSI_PIN);
+
+    //SPI configuration
+    SPI_I2S_DeInit(SPI1);
+    SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;			//SPIè®¾ç½®ä¸ºåŒçº¿åŒå‘å…¨åŒå·¥
+    SPI_InitStructure.SPI_Mode = SPI_Mode_Master;								//è®¾ç½®ä¸ºä¸»SPI
+    SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;							//SPIå‘é€æ¥æ”¶8ä½å¸§ç»“æ„
+    //MPU6000å®˜æ–¹æ–‡æ¡£æœ‰é”™ï¼Œå®é™…æ˜¯å¦‚ä¸‹é…ç½®
+    SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;									//ä¸²è¡ŒåŒæ­¥æ—¶é’Ÿçš„ç©ºé—²çŠ¶æ€ä¸ºä½ç”µå¹³
+    SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;								//ä¸²è¡ŒåŒæ­¥æ—¶é’Ÿçš„ç¬¬ä¸€ä¸ªè·³å˜æ²¿ï¼ˆä¸Šå‡æˆ–ä¸‹é™ï¼‰æ•°æ®è¢«é‡‡æ ·
+
+    SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;									//å†…éƒ¨NSSä¿¡å·æœ‰SSIä½æ§åˆ¶
+    SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_64;			//æ³¢ç‰¹ç‡é¢„åˆ†é¢‘å€¼ä¸º16
+    SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;							//æ•°æ®ä¼ è¾“ä»MSBä½å¼€å§‹
+    SPI_InitStructure.SPI_CRCPolynomial = 7;									//CRCå€¼è®¡ç®—çš„å¤šé¡¹å¼
+    SPI_Init(SPI1, &SPI_InitStructure);											//æ ¹æ®SPI_InitStructä¸­æŒ‡å®šçš„å‚æ•°åˆå§‹åŒ–å¤–è®¾SPIxå¯„å­˜å™¨
+    SPI_Cmd(SPI1, ENABLE);
 }
 
 
-
-//SPI1ËÙ¶ÈÉèÖÃº¯Êı
-//SPIËÙ¶È=fAPB2/·ÖÆµÏµÊı
-//@ref SPI_BaudRate_Prescaler:SPI_BaudRatePrescaler_2~SPI_BaudRatePrescaler_256  
-//fAPB2Ê±ÖÓÒ»°ãÎª84Mhz£º
-void SPI1_SetSpeed(uint8_t SPI_BaudRatePrescaler)
-{
-  assert_param(IS_SPI_BAUDRATE_PRESCALER(SPI_BaudRatePrescaler));//ÅĞ¶ÏÓĞĞ§ĞÔ
-	SPI1->CR1&=0XFFC7;//Î»3-5ÇåÁã£¬ÓÃÀ´ÉèÖÃ²¨ÌØÂÊ
-	SPI1->CR1|=SPI_BaudRatePrescaler;	//ÉèÖÃSPI1ËÙ¶È 
-	SPI_Cmd(SPI1,ENABLE); //Ê¹ÄÜSPI1
-} 
+//SPI1é€Ÿåº¦è®¾ç½®å‡½æ•°
+//SPIé€Ÿåº¦=fAPB2/åˆ†é¢‘ç³»æ•°
+//@ref SPI_BaudRate_Prescaler:SPI_BaudRatePrescaler_2~SPI_BaudRatePrescaler_256
+//fAPB2æ—¶é’Ÿä¸€èˆ¬ä¸º84Mhzï¼š
+void SPI1_SetSpeed(uint8_t SPI_BaudRatePrescaler) {
+    assert_param(IS_SPI_BAUDRATE_PRESCALER(SPI_BaudRatePrescaler));//åˆ¤æ–­æœ‰æ•ˆæ€§
+    SPI1->CR1 &= 0XFFC7;//ä½3-5æ¸…é›¶ï¼Œç”¨æ¥è®¾ç½®æ³¢ç‰¹ç‡
+    SPI1->CR1 |= SPI_BaudRatePrescaler;    //è®¾ç½®SPI1é€Ÿåº¦
+    SPI_Cmd(SPI1, ENABLE); //ä½¿èƒ½SPI1
+}
 
 
-//SPI1 ¶ÁĞ´Ò»¸ö×Ö½Ú
-//TxData:ÒªĞ´ÈëµÄ×Ö½Ú
-//·µ»ØÖµ:¶ÁÈ¡µ½µÄ×Ö½Ú
-uint8_t SPI1_ReadWriteByte(SPI_TypeDef* SPIx, uint8_t Writedata)
-{		 			 
- 
-  while (SPI_I2S_GetFlagStatus(SPIx, SPI_I2S_FLAG_TXE) == RESET){}//µÈ´ı·¢ËÍÇø¿Õ  
-	
-	SPI_I2S_SendData(SPIx, Writedata); //Í¨¹ıÍâÉèSPIx·¢ËÍÒ»¸öbyte  Êı¾İ
-		
-  while (SPI_I2S_GetFlagStatus(SPIx, SPI_I2S_FLAG_RXNE) == RESET){} //µÈ´ı½ÓÊÕÍêÒ»¸öbyte  
- 
-	return SPI_I2S_ReceiveData(SPIx); //·µ»ØÍ¨¹ıSPIx×î½ü½ÓÊÕµÄÊı¾İ	
- 		    
+//SPI1 è¯»å†™ä¸€ä¸ªå­—èŠ‚
+//TxData:è¦å†™å…¥çš„å­—èŠ‚
+//è¿”å›å€¼:è¯»å–åˆ°çš„å­—èŠ‚
+uint8_t SPI1_ReadWriteByte(SPI_TypeDef *SPIx, uint8_t Writedata) {
+    while (SPI_I2S_GetFlagStatus(SPIx, SPI_I2S_FLAG_TXE) == RESET) { }//ç­‰å¾…å‘é€åŒºç©º
+    SPI_I2S_SendData(SPIx, Writedata); //é€šè¿‡å¤–è®¾SPIxå‘é€ä¸€ä¸ªbyte  æ•°æ®
+    while (SPI_I2S_GetFlagStatus(SPIx, SPI_I2S_FLAG_RXNE) == RESET) { } //ç­‰å¾…æ¥æ”¶å®Œä¸€ä¸ªbyte
+    return SPI_I2S_ReceiveData(SPIx); //è¿”å›é€šè¿‡SPIxæœ€è¿‘æ¥æ”¶çš„æ•°æ®
 }
 

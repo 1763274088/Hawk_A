@@ -19,6 +19,7 @@
 ..\obj\main.o: ..\SYSTEM\sys\sys.h
 ..\obj\main.o: ..\SYSTEM\delay\delay.h
 ..\obj\main.o: ..\BSP\motor.h
+..\obj\main.o: ..\BSP\KEY.h
 ..\obj\main.o: ..\BSP\futaba_sbus.h
 ..\obj\main.o: ..\BSP\communication.h
 ..\obj\main.o: ..\BSP\tim.h

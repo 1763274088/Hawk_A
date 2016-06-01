@@ -3,76 +3,60 @@
 #include "led.h"
 #include "delay.h"
 #include "motor.h"
+#include "KEY.h"
 #include "futaba_sbus.h"
 #include "communication.h"
 #include "tim.h"
 #include "rc_process.h"
 
-//ÈÎÎñÖ´ĞĞÊ±¼ä±êÖ¾Î»
-uint32_t time_1_task_ms=0;
-uint32_t time_2_task_ms=0;
-uint32_t time_3_task_ms=0;
+//ä»»åŠ¡æ‰§è¡Œæ—¶é—´æ ‡å¿—ä½
+uint32_t time_1_task_ms = 0;
+uint32_t time_2_task_ms = 0;
+uint32_t time_3_task_ms = 0;
 
-//Ò£¿ØÆ÷´¦Àí
+//é¥æ§å™¨å¤„ç†
 Target_Send Target;
 
-
-
-
-//SBUSĞÅºÅ´¦ÀíÊı×é
+//SBUSä¿¡å·å¤„ç†æ•°ç»„
 unsigned char sbus_rx_buffer[25];
 
+int mode;
+
+uint32_t kkkk = 0;
 
 
-int mode ;
+int main(void) {
+    delay_init();
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);    //è®¾ç½®NVICä¸­æ–­åˆ†ç»„2:2ä½æŠ¢å ä¼˜å…ˆçº§ï¼Œ2ä½å“åº”ä¼˜å…ˆçº§
+    USART3_Config();
+    USART2_Config();
 
-uint32_t kkkk=0;
+    LED_Init();
 
+    //åˆå§‹åŒ–PWMè¾“å‡º
+    motor_init();
 
-int main(void)
-{	
-	delay_init();	
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);	//ÉèÖÃNVICÖĞ¶Ï·Ö×é2:2Î»ÇÀÕ¼ÓÅÏÈ¼¶£¬2Î»ÏìÓ¦ÓÅÏÈ¼¶	
-	USART3_Config();
-	USART2_Config();
+    // å¤ä½ç”µè°ƒ
+    motor_start_output(4000);        // æ²¹é—¨æœ€å¤§
+    delay_ms(1000);                    // 3Så†…æ²¹é—¨è°ƒè‡³æœ€å°
+    motor_start_output(2000);        // æ²¹é—¨æœ€å°
+    delay_ms(2000);
 
-	LED_Init();
-	
-	//³õÊ¼»¯PWMÊä³ö
-	motor_init();
-	//¸øµçµ÷Æô¶¯ĞÅºÅ£¬ÒÔ±ãÕıÈ·´¦ÀíÊ£ÏÂµÄ²Ù×÷
-	motor_start_output(4000);
-	delay_ms(1000);
-	motor_start_output(2000);
-	delay_ms(2000);
-	delay_ms(3000);	
+    //æ‰“å¼€å®šæ—¶å™¨ä¸­æ–­
+    TIM1_Configuration();
+    while (1) {
+        //==========================ä»»åŠ¡æ‰§è¡Œå¤„ç†==============================//
+        //æŠŠé¥æ§å™¨çš„æ•°æ®å‘é€ç»™F427
+        if (time_2_task_ms == 5) {
+            time_2_task_ms = 0;
+            //æŠŠé¥æ§å™¨çš„åŸå§‹å€¼ï¼Œå¤„ç†ï¼Œè½¬å˜ä¸ºè¦æ§åˆ¶çš„é£æœºçš„è§’åº¦å€¼
+            if (mode == 1) {
+                remote_process();
+            }
+            else {
 
-	//´ò¿ª¶¨Ê±Æ÷ÖĞ¶Ï
-	TIM1_Configuration();
-
-		
-	while(1)
-	{
-
-		
-		//==========================ÈÎÎñÖ´ĞĞ´¦Àí==============================//
-		
-		//°ÑÒ£¿ØÆ÷µÄÊı¾İ·¢ËÍ¸øF427
-		if(time_2_task_ms==5)
-		{
-			time_2_task_ms=0;
-			//°ÑÒ£¿ØÆ÷µÄÔ­Ê¼Öµ£¬´¦Àí£¬×ª±äÎªÒª¿ØÖÆµÄ·É»úµÄ½Ç¶ÈÖµ
-			if(mode==1)
-			{
-			remote_process();
-			}
-			else
-			{
-
-			}
-			
-		}
-		//====================================================================//
-	}
-	
+            }
+        }
+        //====================================================================//
+    }
 }

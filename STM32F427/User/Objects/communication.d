@@ -41,3 +41,8 @@
 .\objects\communication.o: ..\BSP\sys.h
 .\objects\communication.o: ..\BSP\uart.h
 .\objects\communication.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\communication.o: ..\User\PPM.h
+.\objects\communication.o: ..\Algorithm\Control_Algorithm.h
+.\objects\communication.o: ..\Algorithm\Math_Algorithm.h
+.\objects\communication.o: ..\BSP\mpu6000.h
+.\objects\communication.o: ..\BSP\spi.h

@@ -47,3 +47,4 @@
 .\objects\tim.o: ..\Algorithm\Attitude_Algorithm.h
 .\objects\tim.o: ..\Algorithm\Math_Algorithm.h
 .\objects\tim.o: ..\Algorithm\Control_Algorithm.h
+.\objects\tim.o: ..\BSP\lsm303d.h

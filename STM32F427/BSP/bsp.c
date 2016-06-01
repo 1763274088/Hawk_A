@@ -1,125 +1,106 @@
 #include "bsp.h"
 #include "Control_Algorithm.h"
+#include "delay.h"
+#include "lsm303d.h"
 
 uint8_t F_byte;
 uint8_t S_byte;
-
 
 float Gyro_value[3];
 float Accel_value[3];
 float Temp_value;
 
-_MS5611_PROM_DATA_SHARED MS5611_PROM_DATA_SHARED;
-_MS5611_NORMAL_DATA_SHARED MS5611_NORMAL_DATA_SHARED;
-FM25V01_WRITE_ADDRESS FM25V01_Write;
-FM25V01_READ_ADDRESS FM25V01_Read;
-FM25V01_Manufacturer_Product_ID FM25V01_ID;
+_sensor Gyro_sensor;		//é™€èºä»ªç»“æ„ä½“
+_sensor Acce_sensor;		//åŠ é€Ÿåº¦è®¡ç»“æ„ä½“
+_sensor Maga_sensor;        //åœ°ç£ä¼ æ„Ÿå™¨ç»“æ„ä½“
 
+PID_InitTypeDef Inside_link;    //å®šä¹‰ä¸€ä¸ªå†…ç¯ç»“æ„ä½“
+PID_InitTypeDef	Outside_link;   //å®šä¹‰ä¸€ä¸ªå¤–ç¯ç»“æ„ä½“
 
-_sensor Gyro_sensor;				//ÍÓÂİÒÇ½á¹¹Ìå
-_sensor Acce_sensor;				//¼ÓËÙ¶È¼Æ½á¹¹Ìå
+void BSP_initialization(void) {
+    //åˆå§‹åŒ–å»¶æ—¶å‡½æ•°ï¼Œåˆå§‹åŒ–ç³»ç»Ÿæ—¶é’Ÿ
+	delay_init(180);
 
+    //è®¾ç½®ä¸­æ–­ä¼˜å…ˆçº§ï¼Œè®¾ç½®ä¸ºç¬¬äºŒç»„
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 
- PID_InitTypeDef	Inside_link;
-//¶¨ÒåÒ»¸öÍâ»·½á¹¹Ìå
- PID_InitTypeDef	Outside_link;
+	//åˆå§‹åŒ–ä¸²å£6
+    USART6_Config();
 
+    //åˆå§‹åŒ–ä¸²å£3
+    Uart3_init();
 
-extern char table;
+    //å»¶æ—¶ä¸€ä¸‹
+	delay_ms(1000);
 
-void BSP_initialization(void)
-{
-	uint8_t table;
-		//³õÊ¼»¯ÑÓÊ±º¯Êı£¬³õÊ¼»¯ÏµÍ³Ê±ÖÓ
-		delay_init(180);
-		//ÉèÖÃÖĞ¶ÏÓÅÏÈ¼¶£¬ÉèÖÃÎªµÚ¶ş×é
-		NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
-		USART6_Config();
-		//³õÊ¼»¯´®¿Ú3
-    Uart_init();
-		//³õÊ¼»¯MPU6000
-		table=MPU6000_Init();
-		if(table==0)
-		//³õÊ¼»¯Ö¸Ê¾µÆ
-		LED_Init();	
-				//³õÊ¼»¯´®¿Ú6
+    //åˆå§‹åŒ–MPU6000ï¼Œåˆå§‹åŒ–å®Œæˆæ—¶ç‚¹äº®æŒ‡ç¤ºç¯
+    if (MPU6000_Init() == 0) {
+        LED_Init();		//åˆå§‹åŒ–æŒ‡ç¤ºç¯ï¼Œäº®
+		delay_us(2000);
+	}
 
-		//³õÊ¼»¯TCA62724
-//		TCA62724_Init();
-
+//    //åˆå§‹åŒ–LSM303Dï¼Œåˆå§‹åŒ–å®Œæˆæ—¶å…³é—­æŒ‡ç¤ºç¯
+//    if(LSM303D_Init() == 0) {
+        GPIO_SetBits(GPIOE,GPIO_Pin_12);// ç­æŒ‡ç¤ºç¯
+//        delay_us(2000);
+//    }
 }
 
+void Sensor_Calibration(void) {
+	// è£…å…¥åˆå§‹åæ–¹å·®å€¼
+	Gyro_sensor.his_covariance[0] = 0.01;
+	Gyro_sensor.his_covariance[1] = 0.01;
+	Gyro_sensor.his_covariance[2] = 0.01;
+	Acce_sensor.his_covariance[0] = 0.01;
+	Acce_sensor.his_covariance[1] = 0.01;
+	Acce_sensor.his_covariance[2] = 0.01;
+    Maga_sensor.his_covariance[0] = 0.01;
+	Maga_sensor.his_covariance[1] = 0.01;
+	Maga_sensor.his_covariance[2] = 0.01;
 
+    //æ ¡å‡†åœ°ç£ä¼ æ„Ÿå™¨
+   // Magnetism_Bias(Maga_sensor.quiet);
+    
+    //æ ¡å‡†é™€èºä»ª
+    Gyroscope_Bias(Gyro_sensor.quiet);
 
-void Sensor_Calibration(void)
-{	
-		//Ğ£×¼ÍÓÂİÒÇ
-		Gyroscope_Bias(Gyro_sensor.quiet);
-		//Ğ£×¼¼ÓËÙ¶È¼Æ	
-		Accelerometer_Bias(Acce_sensor.quiet);
-		Acce_sensor.quiet[2]=65536/8-(Acce_sensor.quiet[2]);
-		table=1;
-		if(table==1)
-		//³õÊ¼»¯¶¨Ê±Æ÷3£¬×÷ÎªÈÎÎñµ÷¶ÈÆ÷»ù×¼,»ù×¼Îª1ms
-		TIM3_Int_Init(2000,45);				
+    //æ ¡å‡†åŠ é€Ÿåº¦è®¡
+    Accelerometer_Bias(Acce_sensor.quiet);
+    Acce_sensor.quiet[2] = 65536 / 8 - (Acce_sensor.quiet[2]);
+
+    //åˆå§‹åŒ–å®šæ—¶å™¨3ï¼Œä½œä¸ºä»»åŠ¡è°ƒåº¦å™¨åŸºå‡†,åŸºå‡†ä¸º1ms
+	TIM3_Int_Init(2000, 45);
 }
 
+void Parameter_loading(void) {
 
-void Parameter_loading(void)
-{
-		//===================Íâ»·²ÎÊı===================//
-			//pitchÖá
-		Outside_link.Pitch_kp=0;
-		Outside_link.Pitch_ki=0;
-		Outside_link.Pitch_kd=0;
-	
-		//rollÖá
-		Outside_link.Roll_kp=0;
-		Outside_link.Roll_ki=0;
-		Outside_link.Roll_kd=0;
-	
-		//yawÖá
-		Outside_link.Yaw_kp=0;
-		Outside_link.Yaw_ki=0;
-		Outside_link.Yaw_kd=0;
-		//==============================================//
+    //===================å¤–ç¯å‚æ•°===================//
+    //pitchè½´
+    Outside_link.Pitch_kp = 0;
+    Outside_link.Pitch_ki = 0;
+    Outside_link.Pitch_kd = 0;
+    //rollè½´
+    Outside_link.Roll_kp = 0;
+    Outside_link.Roll_ki = 0;
+    Outside_link.Roll_kd = 0;
+    //yawè½´
+    Outside_link.Yaw_kp = 0;
+    Outside_link.Yaw_ki = 0;
+    Outside_link.Yaw_kd = 0;
+    //==============================================//
 
-
-		//===================ÄÚ»·²ÎÊı===================//
-		//pitchÖá
-		Inside_link.Pitch_kp=0.8;	
-		Inside_link.Pitch_ki=0;		
-		Inside_link.Pitch_kd=0;	
-
-		//rollÖá
-		Inside_link.Roll_kp=0.8;
-		Inside_link.Roll_ki=0;
-		Inside_link.Roll_kd=0;
-	
-		//yawÖá
-		Inside_link.Yaw_kp=0;
-		Inside_link.Yaw_ki=0;
-		Inside_link.Yaw_kd=0;
-		//==============================================//
-
+    //===================å†…ç¯å‚æ•°===================//
+    //pitchè½´
+    Inside_link.Pitch_kp = 0.8;
+    Inside_link.Pitch_ki = 0;
+    Inside_link.Pitch_kd = 0;
+    //rollè½´
+    Inside_link.Roll_kp = 0.8;
+    Inside_link.Roll_ki = 0;
+    Inside_link.Roll_kd = 0;
+    //yawè½´
+    Inside_link.Yaw_kp = 0;
+    Inside_link.Yaw_ki = 0;
+    Inside_link.Yaw_kd = 0;
+    //==============================================//
 }
-
-//		TCA62724_Write_Pwm_Data(0x00,TCA62724_IIC_PWM_Duty_1,TCA62724_IIC_PWM_Duty_1,TCA62724_IIC_PWM_Duty_1);	
-//	
-//		TCA62724_Read_staus_Data(&F_byte,&S_byte );
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

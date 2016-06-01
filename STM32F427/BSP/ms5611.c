@@ -122,52 +122,48 @@ void MS5611_Init( void )
 //  MS5611_Calculate();
 }
 
-static void MS5611_Calculate(s32* T, s32 *P)
-{
-		int32_t dT, TEMP, T2 = 0;
-		int64_t OFF, SENS, OFF2 = 0, SENS2 = 0;
-		int32_t lowTEMP, verylowTemp;
-		
-		//////////////////////////////////////////////////////////////////////////
-		//MS5611_PROM_DATA_SHARED是PROM结构体
-		//MS5611_NORMAL_DATA_SHARED是正常的数据结构体
+//static void MS5611_Calculate(s32* T, s32 *P)
+//{
+//		int32_t dT, TEMP, T2 = 0;
+//		int64_t OFF, SENS, OFF2 = 0, SENS2 = 0;
+//		int32_t lowTEMP, verylowTemp;
+//		
+//		//////////////////////////////////////////////////////////////////////////
+//		//MS5611_PROM_DATA_SHARED是PROM结构体
+//		//MS5611_NORMAL_DATA_SHARED是正常的数据结构体
 
-		dT = (MS5611_NORMAL_DATA_SHARED.MS5611_normal_data.D2_Temperature) 
-					- ((u32)(MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C5_TREF) << 8);
-	
-		TEMP = 2000 + (((int64_t)dT * MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C6_TEMPSENS) >> 23);
-	
-		OFF = ((u32)MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C2_OFF << 16)  
-					+((MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C4_TCO * (int64_t)dT) >> 7);
-	
-		SENS = ((u32)MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C1_SENS << 15) 
-					+ ((MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C3_TCS * (int64_t)dT) >> 8);
-		//
-		*T = TEMP;
-		//////////////////////////////////////////////////////////////////////////
-		//second order temperature compensation
-	if(TEMP < 2000){
-		T2 = (int64_t)((int64_t)dT * (int64_t)dT) >> 31;
-		lowTEMP = TEMP - 2000;
-		lowTEMP *= lowTEMP;
-		OFF2 = (5 * lowTEMP) >> 1;
-		SENS2 = (5 * lowTEMP) >> 2;
-		if(TEMP < -1500){
-			verylowTemp = TEMP + 1500;
-			verylowTemp *= verylowTemp;
-			OFF2 = OFF2 + 7 * verylowTemp;
-			SENS2 = SENS2 + ((11 * verylowTemp) >> 1);
-		}
-		//
-		OFF = OFF - OFF2;
-		SENS = SENS - SENS2;
-		*T = TEMP - T2;
-	}
-		//////////////////////////////////////////////////////////////////////////
-		*P = ((((int64_t)MS5611_NORMAL_DATA_SHARED.MS5611_normal_data.D1_Pressure * SENS) >> 21) - OFF) >> 15;  
+//		dT = (MS5611_NORMAL_DATA_SHARED.MS5611_normal_data.D2_Temperature) 
+//					- ((u32)(MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C5_TREF) << 8);
+//	
+//		TEMP = 2000 + (((int64_t)dT * MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C6_TEMPSENS) >> 23);
+//	
+//		OFF = ((u32)MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C2_OFF << 16)  
+//					+((MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C4_TCO * (int64_t)dT) >> 7);
+//	
+//		SENS = ((u32)MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C1_SENS << 15) 
+//					+ ((MS5611_PROM_DATA_SHARED.MS5611_prom_data.MS5611_C3_TCS * (int64_t)dT) >> 8);
+//		//
+//		*T = TEMP;
+//		//////////////////////////////////////////////////////////////////////////
+//		//second order temperature compensation
+//	if(TEMP < 2000){
+//		T2 = (int64_t)((int64_t)dT * (int64_t)dT) >> 31;
+//		lowTEMP = TEMP - 2000;
+//		lowTEMP *= lowTEMP;
+//		OFF2 = (5 * lowTEMP) >> 1;
+//		SENS2 = (5 * lowTEMP) >> 2;
+//		if(TEMP < -1500){
+//			verylowTemp = TEMP + 1500;
+//			verylowTemp *= verylowTemp;
+//			OFF2 = OFF2 + 7 * verylowTemp;
+//			SENS2 = SENS2 + ((11 * verylowTemp) >> 1);
+//		}
+//		//
+//		OFF = OFF - OFF2;
+//		SENS = SENS - SENS2;
+//		*T = TEMP - T2;
+//	}
+//	//////////////////////////////////////////////////////////////////////////
+//	*P = ((((int64_t)MS5611_NORMAL_DATA_SHARED.MS5611_normal_data.D1_Pressure * SENS) >> 21) - OFF) >> 15;  
 
-}
-
-
-
-
+//}

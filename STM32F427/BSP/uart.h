@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    uart.h 
+  * @file    uart.h
   * @author  WangBao Dev Team
   * @version V1.0.0
   * @date    07-10-2012
@@ -17,8 +17,8 @@
   *
   * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
   ******************************************************************************
-  */ 
- 
+  */
+
 #ifndef _UART_H_
 #define _UART_H_
 
@@ -27,12 +27,14 @@
 #include "stdio.h"
 
 
-void Uart_init(void);
-void Usart3_SendData(USART_TypeDef* USARTx, unsigned char TempData);
-void usart3_send_data(unsigned char	Send_number,unsigned char *Send_data);
 
-unsigned short CRC_CHECK(unsigned char *Buf, unsigned char CRC_CNT);
-void OutPut_Data();
+
+
+void Uart3_init(void);
+
+void Usart3_SendData(USART_TypeDef *USARTx, unsigned char TempData);
+
+void usart3_send_data(unsigned char Send_number, unsigned char *Send_data);
 
 #endif /* _UART_H_ */
 

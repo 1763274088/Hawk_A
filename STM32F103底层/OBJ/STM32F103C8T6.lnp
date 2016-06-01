@@ -36,6 +36,7 @@
 "..\obj\motor.o"
 "..\obj\tim.o"
 "..\obj\rc_process.o"
+"..\obj\key.o"
 --strict --scatter "..\OBJ\STM32F103C8T6.sct"
 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
 --info sizes --info totals --info unused --info veneers

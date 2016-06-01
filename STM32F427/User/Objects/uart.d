@@ -38,3 +38,7 @@
 .\objects\uart.o: ..\STM32F4xx_Driver\inc\stm32f4xx_fmc.h
 .\objects\uart.o: ..\STM32F4xx_Driver\inc\stm32f4xx_sai.h
 .\objects\uart.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
+.\objects\uart.o: ..\User\PPM.h
+.\objects\uart.o: ..\BSP\communication.h
+.\objects\uart.o: ..\BSP\delay.h
+.\objects\uart.o: ..\BSP\sys.h

@@ -4,149 +4,147 @@
 #include "Filtering_Algorithm.h"
 #include "Attitude_Algorithm.h"
 #include "Control_Algorithm.h"
+#include "lsm303d.h"
 
-char table=0;
-#define Gyro_Gr	0.0005426
-#define Gyro_G	0.030517578125
+extern _sensor Gyro_sensor;		//é™€èºä»ªç»“æ„ä½“
+extern _sensor Acce_sensor;		//åŠ é€Ÿåº¦è®¡ç»“æ„ä½“
+extern _sensor Maga_sensor;     //åœ°ç£ä¼ æ„Ÿå™¨ç»“æ„ä½“
 
-//×ËÌ¬½âËã±äÁ¿
-float ROLL=0,YAW=0,PIT=0,HALF_T=0.001;
+char table = 0;
+#define Gyro_Gr		0.0005426f
+#define Gyro_G		0.030517578125f
 
-//±£´æÍÓÂİÒÇºÍ¼ÓËÙ¶È¼ÆµÄÆ«²îÖµ£¨Ô­Ê¼ÖµºÍ¾²Ì¬ÖµµÄ²îÖµ£©
+//å§¿æ€è§£ç®—å˜é‡
+float ROLL = 0, YAW = 0, PIT = 0, HALF_T = 0.001;
+
+//ä¿å­˜é™€èºä»ªå’ŒåŠ é€Ÿåº¦è®¡çš„åå·®å€¼ï¼ˆåŸå§‹å€¼å’Œé™æ€å€¼çš„å·®å€¼ï¼‰
 int16_t GYRO_transition[3];
 int16_t ACCE_transition[3];
+int16_t MAGA_transition[3];
 
-uint32_t time_2_ms=0;
-uint32_t time_3_ms=0;
-//±£´æ½ÓÊÕµ½Êı¾İ±êÖ¾Î»,ÔÚcommunicationÎÄ¼şÀïÃæÓĞ´¦Àí
-extern uint8_t	give_data_table;
+int16_t 	time_1_ms = 0;
+uint32_t 	time_2_ms = 0;
+uint32_t 	time_10_ms = 0;
 
-//·¢ËÍ¿ØÖÆ±êÖ¾Î»
-uint8_t motor_send_table=0;
+extern uint8_t UART3_Receive_Data;  //å®šä¹‰UART3çš„å®Œå…¨æ¥å—å®Œæˆæ ‡å¿—
 
+//å‘é€æ§åˆ¶æ ‡å¿—ä½
+uint8_t motor_send_table = 0;
 
-//ÈÎÎñ¹ÜÀí¶¨Ê±Æ÷£¬¶¨Ê±ÖÜÆÚÎª1ms
-void TIM3_Int_Init(u16 arr,u16 psc)
-{
-		TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure;
-		NVIC_InitTypeDef NVIC_InitStructure;
-		
-		RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3,ENABLE);  ///Ê¹ÄÜTIM3Ê±ÖÓ
-		
-		TIM_TimeBaseInitStructure.TIM_Period = arr-1; 	//×Ô¶¯ÖØ×°ÔØÖµ
-		TIM_TimeBaseInitStructure.TIM_Prescaler=psc-1;  //¶¨Ê±Æ÷·ÖÆµ
-		TIM_TimeBaseInitStructure.TIM_CounterMode=TIM_CounterMode_Up; //ÏòÉÏ¼ÆÊıÄ£Ê½
-		TIM_TimeBaseInitStructure.TIM_ClockDivision=TIM_CKD_DIV1; 
-		
-		TIM_TimeBaseInit(TIM3,&TIM_TimeBaseInitStructure);//³õÊ¼»¯TIM3
-		
-		TIM_ITConfig(TIM3,TIM_IT_Update,ENABLE); //ÔÊĞí¶¨Ê±Æ÷3¸üĞÂÖĞ¶Ï
-		TIM_Cmd(TIM3,ENABLE); //Ê¹ÄÜ¶¨Ê±Æ÷3
-		
-		NVIC_InitStructure.NVIC_IRQChannel=TIM3_IRQn; //¶¨Ê±Æ÷3ÖĞ¶Ï
-		NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=0x01; //ÇÀÕ¼ÓÅÏÈ¼¶1
-		NVIC_InitStructure.NVIC_IRQChannelSubPriority=0x03; //×ÓÓÅÏÈ¼¶3
-		NVIC_InitStructure.NVIC_IRQChannelCmd=ENABLE;
-		NVIC_Init(&NVIC_InitStructure);
+//ä»»åŠ¡ç®¡ç†å®šæ—¶å™¨ï¼Œå®šæ—¶å‘¨æœŸä¸º1ms
+void TIM3_Int_Init(u16 arr, u16 psc) {
+    TIM_TimeBaseInitTypeDef TIM_TimeBaseInitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
+
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);			//ä½¿èƒ½TIM3æ—¶é’Ÿ
+
+    TIM_TimeBaseInitStructure.TIM_Period = arr - 1;					//è‡ªåŠ¨é‡è£…è½½å€¼
+    TIM_TimeBaseInitStructure.TIM_Prescaler = psc - 1;				//å®šæ—¶å™¨åˆ†é¢‘
+    TIM_TimeBaseInitStructure.TIM_CounterMode = TIM_CounterMode_Up;	//å‘ä¸Šè®¡æ•°æ¨¡å¼
+    TIM_TimeBaseInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+
+    TIM_TimeBaseInit(TIM3, &TIM_TimeBaseInitStructure);		//åˆå§‹åŒ–TIM3
+
+    TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE);				//å…è®¸å®šæ—¶å™¨3æ›´æ–°ä¸­æ–­
+    TIM_Cmd(TIM3, ENABLE);									//ä½¿èƒ½å®šæ—¶å™¨3
+
+    NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;					//å®šæ—¶å™¨3ä¸­æ–­
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x01;    //æŠ¢å ä¼˜å…ˆçº§1
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x03;			//å­ä¼˜å…ˆçº§3
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
 }
+////////////////////////////
 
-void time_1ms_task_loop(void)
-{
-		//¶ÁÈ¡Ò£¿ØÆ÷µÄÊıÖµ
-		if(give_data_table==1)
-		{
+void time_1ms_task_loop(void) {
+//è¯»å–é¥æ§å™¨çš„æ•°å€¼
+    if (UART3_Receive_Data == 1) {
 		Calculate_target_amount();
-		give_data_table=0;
-		}
-			
-		//¶ÁÈ¡MPU6000µÄÍÓÂİÒÇºÍ¼ÓËÙ¶È¼ÆµÄÔ­Ê¼ÊıÖµ
-		MPU6000_Get_Original_Value(Gyro_sensor.origin,	Acce_sensor.origin,0);
-	
-		//Çó³öÍÓÂİÒÇºÍ¼ÓËÙ¶È¼ÆµÄ¾²Ì¬Æ«²î
-		GYRO_transition[0]=(-(Gyro_sensor.origin[0]))-Gyro_sensor.quiet[0];
-		GYRO_transition[1]=(Gyro_sensor.origin[1])-Gyro_sensor.quiet[1];
-		GYRO_transition[2]=(-(Gyro_sensor.origin[2]))-Gyro_sensor.quiet[2];
-	
-		ACCE_transition[0]=(-(Acce_sensor.origin[0]))-Acce_sensor.quiet[0];
-		ACCE_transition[1]=(Acce_sensor.origin[1])-Acce_sensor.quiet[1];
-		ACCE_transition[2]=(-(Acce_sensor.origin[2]))-Acce_sensor.quiet[2];		
+        UART3_Receive_Data = 0;
+    }
 
-		//¶ÔÔ­Ê¼ÊıÖµ½øĞĞÂË²¨,²ÉÓÃ»¬¶¯ÂË²¨
-		Moving_Average_Filter(GYRO_transition,ACCE_transition,Gyro_sensor.Filter	,Acce_sensor.Filter);
-	
-		//°ÑÍÓÂİÒÇµÄÖµ×ª»¯Îª»¡¶ÈÖµ
-		Gyro_sensor.radian[0]=Gyro_sensor.Filter[0]*Gyro_Gr;
-		Gyro_sensor.radian[1]=Gyro_sensor.Filter[1]*Gyro_Gr;
-		Gyro_sensor.radian[2]=Gyro_sensor.Filter[2]*Gyro_Gr;
-	
+//è¯»å–MPU6000çš„é™€èºä»ªå’ŒåŠ é€Ÿåº¦è®¡çš„åŸå§‹æ•°å€¼
+    MPU6000_Get_Original_Value(Gyro_sensor.origin, Acce_sensor.origin, 0);
+
+//è¯»å–LSM303Dçš„åœ°ç£è®¡å’ŒåŠ é€Ÿåº¦è®¡çš„åŸå§‹å€¼
+    //LSM303D_DataPrepare(Maga_sensor.origin, 0);
+
+//è¯»å–åœ°ç£æ„Ÿåº”å™¨ç”µå­ç½—ç›˜å¤åˆæ¨¡å—
+//    MAGA_transition[0] = Maga_sensor.origin[0] - Maga_sensor.quiet[0];
+//    MAGA_transition[1] = Maga_sensor.origin[1] - Maga_sensor.quiet[1];
+//    MAGA_transition[2] = Maga_sensor.origin[2] - Maga_sensor.quiet[2];
+
+//è®¡ç®—é™€èºä»ªå’ŒåŠ é€Ÿåº¦è®¡çš„é™æ€åå·®
+    GYRO_transition[0] = (-(Gyro_sensor.origin[0])) - Gyro_sensor.quiet[0];
+    GYRO_transition[1] = (+(Gyro_sensor.origin[1])) - Gyro_sensor.quiet[1];
+    GYRO_transition[2] = (-(Gyro_sensor.origin[2])) - Gyro_sensor.quiet[2];
+    ACCE_transition[0] = (-(Acce_sensor.origin[0])) - Acce_sensor.quiet[0];
+    ACCE_transition[1] = (+(Acce_sensor.origin[1])) - Acce_sensor.quiet[1];
+    ACCE_transition[2] = (-(Acce_sensor.origin[2])) - Acce_sensor.quiet[2];
+
+//å¯¹åŸå§‹æ•°å€¼è¿›è¡Œæ»¤æ³¢,é‡‡ç”¨å…ˆå¡å°”æ›¼ï¼Œåæ»‘åŠ¨æ»¤æ³¢
+	Data_KalmanFilter(Gyro_sensor.his_covariance,Gyro_sensor.histor,GYRO_transition,Gyro_sensor.Filter);
+	Data_KalmanFilter(Acce_sensor.his_covariance,Acce_sensor.histor,ACCE_transition,Acce_sensor.Filter);
+    Data_KalmanFilter(Maga_sensor.his_covariance,Maga_sensor.histor,MAGA_transition,Maga_sensor.Filter);
+//    Moving_Average_Filter(GYRO_transition, ACCE_transition, Gyro_sensor.Filter, Acce_sensor.Filter);
+
+//æŠŠé™€èºä»ªçš„å€¼è½¬åŒ–ä¸ºå¼§åº¦å€¼
+    Gyro_sensor.radian[0] = Gyro_sensor.Filter[0] * Gyro_Gr;
+    Gyro_sensor.radian[1] = Gyro_sensor.Filter[1] * Gyro_Gr;
+    Gyro_sensor.radian[2] = Gyro_sensor.Filter[2] * Gyro_Gr;
 }
+////////////////////////////////
 
+void time_2ms_task_loop(void) {
 
-void time_2ms_task_loop(void)
-{
-			
-//	printf("%f,%f,%f,%f,%f,%f\r\n",Gyro_sensor.radian[0],Gyro_sensor.radian[1],Gyro_sensor.radian[2],
-//																Acce_sensor.Filter[0],	Acce_sensor.Filter[1],	Acce_sensor.Filter[2]);
-		//×ËÌ¬½âËã£¬Ëã³öROLL¡¢PIT¡¢YAWÈı¸ö½Ç¶ÈÖµ
-		AHRS_Update(Acce_sensor.Filter[0],Acce_sensor.Filter[1], Acce_sensor.Filter[2], Gyro_sensor.radian[0], Gyro_sensor.radian[1], Gyro_sensor.radian[2],HALF_T, &ROLL,&PIT,&YAW );
-		
-		//½Ç¶È»·£º4msµÄÖ´ĞĞÖÜÆÚ
+    //å§¿æ€è§£ç®—ï¼Œç®—å‡ºROLLã€PITã€YAWä¸‰ä¸ªè§’åº¦å€¼
+    AHRS_Update(Acce_sensor.Filter[0], Acce_sensor.Filter[1], Acce_sensor.Filter[2], Gyro_sensor.radian[0],
+                Gyro_sensor.radian[1], Gyro_sensor.radian[2], HALF_T, &ROLL, &PIT, &YAW);
+
+    //è§’åº¦ç¯ï¼š4msçš„æ‰§è¡Œå‘¨æœŸ
 //		Angle_Control_loop();
-	
-	Outside_link.Pitch_CtrOut=0;
-	Outside_link.Roll_CtrOut=0;
-	Outside_link.Yaw_CtrOut=0;
-		//½ÇËÙ¶È»·£º2msµÄÖ´ĞĞÖÜÆÚ
-		Angle_speed_control_loop();
-	
-		//¼ÆËãµç»úÊä³öÁ¿
-		Motor_Control();
-		
-		//·¢ËÍ±êÖ¾Î»ÖÃÒ»
-		motor_send_table=1;
-		
-}
 
+    Outside_link.Pitch_CtrOut = 0;
+    Outside_link.Roll_CtrOut = 0;
+    Outside_link.Yaw_CtrOut = 0;
+    //è§’é€Ÿåº¦ç¯ï¼š2msçš„æ‰§è¡Œå‘¨æœŸ
+    Angle_speed_control_loop();
+
+    //è®¡ç®—ç”µæœºè¾“å‡ºé‡
+    Motor_Control();
+
+    //å‘é€æ ‡å¿—ä½ç½®ä¸€
+    motor_send_table = 1;
+}
 
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@//
 /*
-ÈÎÎñµ÷¶È´¦Àí
-Ñ­»·¼ä¸ôµ÷¶È²»Í¬µÄº¯Êı£¬´¦ÀíÃ¿¸öÈÎÎñ
-Ö´ĞĞÖÜÆÚ£º1MSÖĞ¶Ï
+ä»»åŠ¡è°ƒåº¦å¤„ç†
+å¾ªç¯é—´éš”è°ƒåº¦ä¸åŒçš„å‡½æ•°ï¼Œå¤„ç†æ¯ä¸ªä»»åŠ¡
+æ‰§è¡Œå‘¨æœŸï¼š1MSä¸­æ–­
 */
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@//
-//¶¨Ê±Æ÷3ÖĞ¶Ï·şÎñº¯Êı
+//å®šæ—¶å™¨3ä¸­æ–­æœåŠ¡å‡½æ•°
 
-void TIM3_IRQHandler(void)
-{
-		static int16_t time_1_ms=0;
-//		static int16_t time_2_ms=0;
-//		static int16_t time_5_ms=0;
-	
-		if(TIM_GetITStatus(TIM3,TIM_IT_Update)==SET) //Òç³öÖĞ¶Ï
-		{
-		
-		time_2_ms++;
-		time_1_ms++;
-		time_3_ms++;
+void TIM3_IRQHandler(void) {
 
-				
-			
-		//µÚ1ºÁÃëÖ´ĞĞÈÎÎñ	
-		if(time_1_ms==1)
-		{	
-		time_1ms_task_loop();
-		}
-		//µÚ2ºÁÃëÖ´ĞĞÈÎÎñ
-		if(time_1_ms==2)
-		{
-			time_2ms_task_loop();
-			GPIO_ToggleBits( GPIOA,GPIO_Pin_1);				
-  		time_1_ms=0;	
-		}
+    if (TIM_GetITStatus(TIM3, TIM_IT_Update) == SET) //æº¢å‡ºä¸­æ–­
+    {
+        time_2_ms++;
+        time_1_ms++;
+        time_10_ms++;
 
-		}
-		TIM_ClearITPendingBit(TIM3,TIM_IT_Update);  //Çå³ıÖĞ¶Ï±êÖ¾Î»
+        //ç¬¬1æ¯«ç§’æ‰§è¡Œä»»åŠ¡
+        if (time_1_ms == 1) {
+            time_1ms_task_loop();
+        }
+        //ç¬¬2æ¯«ç§’æ‰§è¡Œä»»åŠ¡
+        if (time_1_ms == 2) {
+            time_2ms_task_loop();
+            time_1_ms = 0;
+        }
+    }
+    TIM_ClearITPendingBit(TIM3, TIM_IT_Update);  //æ¸…é™¤ä¸­æ–­æ ‡å¿—ä½
 }
 
 

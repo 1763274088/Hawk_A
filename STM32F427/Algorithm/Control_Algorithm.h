@@ -1,12 +1,13 @@
 /********************************************************************************
-  * @file    Control_Algorithm.h 
+  * @file    Control_Algorithm.h
   * @author  Huangzhibin
   * @version V1.0.0
   * @date    1-04-2016
   * @brief   Header for Control_Algorithm.c module
-*******************************************************************************/ 
+*******************************************************************************/
 #ifndef _CONTROL_ALGORITHM_H_
 #define _CONTROL_ALGORITHM_H_
+
 #include "stm32f4xx.h"
 #include "stdint.h"
 #include "delay.h"
@@ -15,114 +16,104 @@
 //**********************************************************************************//
 //Definition Structure area:Defines the structure of the operating parameters
 //**********************************************************************************//
-/*¾ø¶ÔÊ½PIDËã·¨£¬½Ó¿Ú²ÎÊı½á¹¹ÀàĞÍ*/
-typedef struct 
-{
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-		//pitchÖáµÄ¿ØÖÆ½á¹¹Ìå
-		float Pitch_kp;     								//±ÈÀıÏµÊı
-		float Pitch_ki;     								//»ı·ÖÏµÊı
-		float Pitch_kd;     								//Î¢·ÖÏµÊı
-		float Pitch_ErrILim;								//Îó²î»ı·ÖÉÏÏŞ	 
-		float Pitch_ErrNow;									//µ±Ç°µÄÎó²î
-		float Pitch_Errpast;								//ÀúÊ·Öµ	
-		float Pitch_CtrOut;									//¿ØÖÆÁ¿Êä³ö 
-		float Pitch_ErrP_out;								//±ÈÀıÊä³ö
-		float Pitch_ErrI_out;								//»ı·ÖÊä³ö
-		float Pitch_ErrD_out;								//Î¢·ÖÊä³ö
-		float	Pitch_increment;							//Îó²îµÄÔöÁ¿
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~// 
+/*ç»å¯¹å¼PIDç®—æ³•ï¼Œæ¥å£å‚æ•°ç»“æ„ç±»å‹*/
+typedef struct {
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+    //pitchè½´çš„æ§åˆ¶ç»“æ„ä½“
+    float Pitch_kp;			//æ¯”ä¾‹ç³»æ•°
+    float Pitch_ki;			//ç§¯åˆ†ç³»æ•°
+    float Pitch_kd;			//å¾®åˆ†ç³»æ•°
+    float Pitch_ErrILim;    //è¯¯å·®ç§¯åˆ†ä¸Šé™
+    float Pitch_ErrNow;     //å½“å‰çš„è¯¯å·®
+    float Pitch_Errpast;    //å†å²å€¼
+    float Pitch_CtrOut;     //æ§åˆ¶é‡è¾“å‡º
+    float Pitch_ErrP_out;   //æ¯”ä¾‹è¾“å‡º
+    float Pitch_ErrI_out;   //ç§¯åˆ†è¾“å‡º
+    float Pitch_ErrD_out;   //å¾®åˆ†è¾“å‡º
+    float Pitch_increment;  //è¯¯å·®çš„å¢é‡
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-		//RollÖáµÄ¿ØÖÆ½á¹¹Ìå
-		float Roll_kp;     									//±ÈÀıÏµÊı
-		float Roll_ki;     									//»ı·ÖÏµÊı
-		float Roll_kd;     									//Î¢·ÖÏµÊı
-		float Roll_ErrILim;									//Îó²î»ı·ÖÉÏÏŞ	 
-		float Roll_ErrNow;									//µ±Ç°µÄÎó²î
-		float Roll_Errpast;									//ÀúÊ·Öµ	
-		float Roll_CtrOut;									//¿ØÖÆÁ¿Êä³ö 
-		float Roll_ErrP_out;								//±ÈÀıÊä³ö
-		float Roll_ErrI_out;								//»ı·ÖÊä³ö
-		float Roll_ErrD_out;								//Î¢·ÖÊä³ö
-		float	Roll_increment;								//Îó²îµÄÔöÁ¿
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~// 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+    //Rollè½´çš„æ§åˆ¶ç»“æ„ä½“
+    float Roll_kp;          //æ¯”ä¾‹ç³»æ•°
+    float Roll_ki;          //ç§¯åˆ†ç³»æ•°
+    float Roll_kd;          //å¾®åˆ†ç³»æ•°
+    float Roll_ErrILim;     //è¯¯å·®ç§¯åˆ†ä¸Šé™
+    float Roll_ErrNow;      //å½“å‰çš„è¯¯å·®
+    float Roll_Errpast;     //å†å²å€¼
+    float Roll_CtrOut;      //æ§åˆ¶é‡è¾“å‡º
+    float Roll_ErrP_out;    //æ¯”ä¾‹è¾“å‡º
+    float Roll_ErrI_out;    //ç§¯åˆ†è¾“å‡º
+    float Roll_ErrD_out;    //å¾®åˆ†è¾“å‡º
+    float Roll_increment;   //è¯¯å·®çš„å¢é‡
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-		//YawÖáµÄ¿ØÖÆ½á¹¹Ìå
-		float Yaw_kp;     									//±ÈÀıÏµÊı
-		float Yaw_ki;     									//»ı·ÖÏµÊı
-		float Yaw_kd;     									//Î¢·ÖÏµÊı
-		float Yaw_ErrILim;									//Îó²î»ı·ÖÉÏÏŞ	 
-		float Yaw_ErrNow;										//µ±Ç°µÄÎó²î
-		float Yaw_Errpast;									//ÀúÊ·Öµ	
-		float Yaw_CtrOut;										//¿ØÖÆÁ¿Êä³ö 
-		float Yaw_ErrP_out;									//±ÈÀıÊä³ö
-		float Yaw_ErrI_out;									//»ı·ÖÊä³ö
-		float Yaw_ErrD_out;									//Î¢·ÖÊä³ö
-		float	Yaw_increment;								//Îó²îµÄÔöÁ¿
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~// 
-}PID_InitTypeDef;
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+    //Yawè½´çš„æ§åˆ¶ç»“æ„ä½“
+    float Yaw_kp;           //æ¯”ä¾‹ç³»æ•°
+    float Yaw_ki;           //ç§¯åˆ†ç³»æ•°
+    float Yaw_kd;           //å¾®åˆ†ç³»æ•°
+    float Yaw_ErrILim;      //è¯¯å·®ç§¯åˆ†ä¸Šé™
+    float Yaw_ErrNow;       //å½“å‰çš„è¯¯å·®
+    float Yaw_Errpast;      //å†å²å€¼
+    float Yaw_CtrOut;       //æ§åˆ¶é‡è¾“å‡º
+    float Yaw_ErrP_out;     //æ¯”ä¾‹è¾“å‡º
+    float Yaw_ErrI_out;     //ç§¯åˆ†è¾“å‡º
+    float Yaw_ErrD_out;     //å¾®åˆ†è¾“å‡º
+    float Yaw_increment;    //è¯¯å·®çš„å¢é‡
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+} PID_InitTypeDef;
 
-/*¶àĞıÒíÄ¿±êÊä³ö½á¹¹ÌåÀàĞÍ*/
-typedef struct 
-{
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
-		//Ä¿±êÊä³ö½á¹¹Ìå¶¨Òå
-		uint16_t target_Altitude;						//Ä¿±ê¸ß¶È
-    float 	target_Pitch; 							//Ä¿±ê¸©Ñö   
-	  float 	target_Roll;								//Ä¿±êºá¹ö  
-	  float 	target_Yaw;									//Ä¿±êÆ«º½   
+/*å¤šæ—‹ç¿¼ç›®æ ‡è¾“å‡ºç»“æ„ä½“ç±»å‹*/
+typedef struct {
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+    //ç›®æ ‡è¾“å‡ºç»“æ„ä½“å®šä¹‰
+    uint16_t target_Altitude;   //ç›®æ ‡é«˜åº¦
+    float target_Pitch;         //ç›®æ ‡ä¿¯ä»°
+    float target_Roll;          //ç›®æ ‡æ¨ªæ»š
+    float target_Yaw;           //ç›®æ ‡åèˆª
 
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~// 
-}target_InitTypeDef;
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+} target_InitTypeDef;
 
-//¶¨ÒåÒ»¸öÄÚ»·½á¹¹Ìå
-extern PID_InitTypeDef	Inside_link;
-//¶¨ÒåÒ»¸öÍâ»·½á¹¹Ìå
-extern PID_InitTypeDef	Outside_link;
+//å®šä¹‰ä¸€ä¸ªå†…ç¯ç»“æ„ä½“
+extern PID_InitTypeDef Inside_link;
+//å®šä¹‰ä¸€ä¸ªå¤–ç¯ç»“æ„ä½“
+extern PID_InitTypeDef Outside_link;
 
-
-
-
-//¿ØÖÆµç»úÊä³ö
+//æ§åˆ¶ç”µæœºè¾“å‡º
 #pragma pack (1)
-typedef struct _CONTROL_Receive_Data_
-{
-    uint8_t     head;      										//°üÍ·£º¹Ì¶¨ÖµÎª0xCC
-    uint16_t    Control_value[6];      				//µç»ú¿ØÖÆÖµÊı¾İ°ü
-		uint8_t			check;												//Ğ£ÑéºÍ£ºÀÛ¼ÓºÍ
-	
-}_CONTROL_Receive_Data;
-#pragma pack () 
+typedef struct _CONTROL_Data_ {
+    uint8_t 	head;				//åŒ…å¤´ï¼šå›ºå®šå€¼ä¸º0xCC
+    uint16_t 	Control_value[6];	//ç”µæœºæ§åˆ¶å€¼æ•°æ®åŒ…
+    uint8_t 	check;				//æ ¡éªŒå’Œï¼šç´¯åŠ å’Œ
+} _CONTROL_Data_;
+#pragma pack ()
 
-//ÕâÀïÊÇĞ¡¶ËÄ£Ê½
-typedef   union _MOTOR_CONTROL_
-{
-    _CONTROL_Receive_Data 	info;
-    uint8_t          				TX_buffer[sizeof(_CONTROL_Receive_Data)];
-}_MOTOR_CONTROL;
+//è¿™é‡Œæ˜¯å°ç«¯æ¨¡å¼
+typedef union _MOTOR_CONTROL_ {
+    _CONTROL_Data_	info;
+    uint8_t			TX_buffer[sizeof(_CONTROL_Data_)];
+} _MOTOR_CONTROL;
 
-extern  _MOTOR_CONTROL motor_tc;
+//extern _MOTOR_CONTROL motor_tc;
 
-
-extern float ROLL,YAW,PIT,HALF_T;
-
-//**********************************************************************************//
-//**********************************************************************************//
-
-
-
+//extern float ROLL, YAW, PIT, HALF_T;
 
 //**********************************************************************************//
 //Function definition area:All functions defined in the file
 //**********************************************************************************//
 /***************************** START Function definition ****************************/
 void Calculate_target_amount(void);
+
 void Angle_Control_loop(void);
+
 void Angle_speed_control_loop(void);
+
 void Motor_Control(void);
+
 void Motor_Send_task(void);
+
 void Motor_Send_stop_task(void);
 /****************************** END Function definition *****************************/
 //**********************************************************************************//

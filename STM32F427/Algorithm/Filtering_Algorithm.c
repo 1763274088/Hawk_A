@@ -1,102 +1,145 @@
 #include "Filtering_Algorithm.h"
 
 //##############################################################//
-//$$$$$$$$$$$$$$$$$$$$$»¬¶¯Æ½¾ùÂË²¨±äÁ¿¶¨Òå$$$$$$$$$$$$$$$$$$$$$//
-//»¬¶¯Æ½¾ùÂË²¨ÊıÖµ¸öÊı
-#define MA_FILTER_NUM_first 			10
-#define MA_FILTER_NUM_second 			20
-//»¬¶¯Æ½¾ùÂË²¨¼ÆÊıÖµ
-uint32_t MA_Filter_cnt = 0;	
-//»¬¶¯Æ½¾ùÂË²¨»º³åÇø
-int32_t	MA_Filter_Buffer_first[3][MA_FILTER_NUM_first+1 ];
-int32_t	MA_Filter_Buffer_second[3][MA_FILTER_NUM_second+1];
-//»¬¶¯ÂË²¨ÀÛ¼ÓÖµ
-int32_t MA_FILTER_Sum_1=0,MA_FILTER_Sum_2=0,MA_FILTER_Sum_3=0;
-int32_t	MA_FILTER_Sum_4=0,MA_FILTER_Sum_5=0,MA_FILTER_Sum_6=0;
+//$$$$$$$$$$$$$$$$$$$$$æ»‘åŠ¨å¹³å‡æ»¤æ³¢å˜é‡å®šä¹‰$$$$$$$$$$$$$$$$$$$$$//
+//æ»‘åŠ¨å¹³å‡æ»¤æ³¢æ•°å€¼ä¸ªæ•°
+#define MA_FILTER_NUM_first		10
+#define MA_FILTER_NUM_second	20
+//æ»‘åŠ¨å¹³å‡æ»¤æ³¢è®¡æ•°å€¼
+uint32_t MA_Filter_cnt = 0;
+//æ»‘åŠ¨å¹³å‡æ»¤æ³¢ç¼“å†²åŒº
+int32_t MA_Filter_Buffer_first[3][MA_FILTER_NUM_first + 1];
+int32_t MA_Filter_Buffer_second[3][MA_FILTER_NUM_second + 1];
+//æ»‘åŠ¨æ»¤æ³¢ç´¯åŠ å€¼
+int32_t MA_FILTER_Sum_1 = 0, MA_FILTER_Sum_2 = 0, MA_FILTER_Sum_3 = 0;
+int32_t MA_FILTER_Sum_4 = 0, MA_FILTER_Sum_5 = 0, MA_FILTER_Sum_6 = 0;
 //##############################################################//
 
 //=============================================================//
-/*
-»¬¶¯Æ½¾ùÂË²¨Ëã·¨
+//æ»‘åŠ¨å¹³å‡æ»¤æ³¢ç®—æ³•ï¼ˆä½é€šæ»¤æ³¢ç®—æ³•ï¼‰
+void Moving_Average_Filter(s16 *buffer_1_Before, s16 *buffer_2_Before, float *buffer_1_after, float *buffer_2_after) {
+    //å…ˆæ¸…æ‰ç¼“å†²åŒº
+    MA_FILTER_Sum_1 = 0;
+    MA_FILTER_Sum_2 = 0;
+    MA_FILTER_Sum_3 = 0;
+    MA_FILTER_Sum_4 = 0;
+    MA_FILTER_Sum_5 = 0;
+    MA_FILTER_Sum_6 = 0;
+	
+    //å…ˆå¡«å……ç¼“å†²åŒºçš„æœ«å°¾å€¼
+    MA_Filter_Buffer_first[0][MA_FILTER_NUM_first] = buffer_1_Before[0];
+    MA_Filter_Buffer_first[1][MA_FILTER_NUM_first] = buffer_1_Before[1];
+    MA_Filter_Buffer_first[2][MA_FILTER_NUM_first] = buffer_1_Before[2];
 
-*/
-void Moving_Average_Filter(s16 *buffer_1_Before,s16 *buffer_2_Before,float *buffer_1_after,float *buffer_2_after)
-{
-		//ÏÈÇåµô»º³åÇø
-		MA_FILTER_Sum_1=0;
-		MA_FILTER_Sum_2=0;
-		MA_FILTER_Sum_3=0;
-		MA_FILTER_Sum_4=0;
-		MA_FILTER_Sum_5=0;
-		MA_FILTER_Sum_6=0;
+    MA_Filter_Buffer_second[0][MA_FILTER_NUM_second] = buffer_2_Before[0];
+    MA_Filter_Buffer_second[1][MA_FILTER_NUM_second] = buffer_2_Before[1];
+    MA_Filter_Buffer_second[2][MA_FILTER_NUM_second] = buffer_2_Before[2];
 
-		//ÏÈÌî³ä»º³åÇøµÄÄ©Î²Öµ
-		MA_Filter_Buffer_first[0][MA_FILTER_NUM_first]=buffer_1_Before[0];
-		MA_Filter_Buffer_first[1][MA_FILTER_NUM_first]=buffer_1_Before[1];	
-		MA_Filter_Buffer_first[2][MA_FILTER_NUM_first]=buffer_1_Before[2];
-	
-		MA_Filter_Buffer_second[0][MA_FILTER_NUM_second]=buffer_2_Before[0];
-		MA_Filter_Buffer_second[1][MA_FILTER_NUM_second]=buffer_2_Before[1];
-		MA_Filter_Buffer_second[2][MA_FILTER_NUM_second]=buffer_2_Before[2];
-	
-		//»º³åÇøÍù×óÒÆ¶¯£¬¶ªµô×îÏÈ½øÀ´µÄÄÇ¸öÊı¾İ
-		for(MA_Filter_cnt = 0; MA_Filter_cnt < MA_FILTER_NUM_first; MA_Filter_cnt++)
-		{
-		//ËùÓĞÊı¾İÍù×óÒÆ¶¯£¬¶ªµô×îµÍÎ»	
-		MA_Filter_Buffer_first[0][MA_Filter_cnt]=MA_Filter_Buffer_first[0][MA_Filter_cnt+1];
-		MA_Filter_Buffer_first[1][MA_Filter_cnt]=MA_Filter_Buffer_first[1][MA_Filter_cnt+1];	
-		MA_Filter_Buffer_first[2][MA_Filter_cnt]=MA_Filter_Buffer_first[2][MA_Filter_cnt+1];
-	
-		//½øĞĞÀÛ¼Ó²Ù×÷
-		MA_FILTER_Sum_1+=MA_Filter_Buffer_first[0][MA_Filter_cnt];
-		MA_FILTER_Sum_2+=MA_Filter_Buffer_first[1][MA_Filter_cnt];
-		MA_FILTER_Sum_3+=MA_Filter_Buffer_first[2][MA_Filter_cnt];			
-		}
-		
-		//»º³åÇøÍù×óÒÆ¶¯£¬¶ªµô×îÏÈ½øÀ´µÄÄÇ¸öÊı¾İ
-		for(MA_Filter_cnt = 0; MA_Filter_cnt < MA_FILTER_NUM_second; MA_Filter_cnt++)
-		{
-		//ËùÓĞÊı¾İÍù×óÒÆ¶¯£¬¶ªµô×îµÍÎ»	
-		MA_Filter_Buffer_second[0][MA_Filter_cnt]=MA_Filter_Buffer_second[0][MA_Filter_cnt+1];
-		MA_Filter_Buffer_second[1][MA_Filter_cnt]=MA_Filter_Buffer_second[1][MA_Filter_cnt+1];
-		MA_Filter_Buffer_second[2][MA_Filter_cnt]=MA_Filter_Buffer_second[2][MA_Filter_cnt+1];			
-	
-		//½øĞĞÀÛ¼Ó²Ù×÷
-		MA_FILTER_Sum_4+=MA_Filter_Buffer_second[0][MA_Filter_cnt];
-		MA_FILTER_Sum_5+=MA_Filter_Buffer_second[1][MA_Filter_cnt];
-		MA_FILTER_Sum_6+=MA_Filter_Buffer_second[2][MA_Filter_cnt];				
-		}
-		
+    //ç¼“å†²åŒºå¾€å·¦ç§»åŠ¨ï¼Œä¸¢æ‰æœ€å…ˆè¿›æ¥çš„é‚£ä¸ªæ•°æ®
+    for (MA_Filter_cnt = 0; MA_Filter_cnt < MA_FILTER_NUM_first; MA_Filter_cnt++) {
+        //æ‰€æœ‰æ•°æ®å¾€å·¦ç§»åŠ¨ï¼Œä¸¢æ‰æœ€ä½ä½
+        MA_Filter_Buffer_first[0][MA_Filter_cnt] = MA_Filter_Buffer_first[0][MA_Filter_cnt + 1];
+        MA_Filter_Buffer_first[1][MA_Filter_cnt] = MA_Filter_Buffer_first[1][MA_Filter_cnt + 1];
+        MA_Filter_Buffer_first[2][MA_Filter_cnt] = MA_Filter_Buffer_first[2][MA_Filter_cnt + 1];
 
-		//ÀÛ¼ÓºÍ£¬³ıÒÔÊıÁ¿£¬µÃµ½ÂË²¨Öµ
-		buffer_1_after[0]=(float)( MA_FILTER_Sum_1 )/(float)MA_FILTER_NUM_first;
-		buffer_1_after[1]=(float)( MA_FILTER_Sum_2 )/(float)MA_FILTER_NUM_first;
-		buffer_1_after[2]=(float)( MA_FILTER_Sum_3 )/(float)MA_FILTER_NUM_first;
-		
-		buffer_2_after[0]=(float)( MA_FILTER_Sum_4 )/(float)MA_FILTER_NUM_second;
-		buffer_2_after[1]=(float)( MA_FILTER_Sum_5 )/(float)MA_FILTER_NUM_second;
-		buffer_2_after[2]=(float)( MA_FILTER_Sum_6 )/(float)MA_FILTER_NUM_second;		
+        //è¿›è¡Œç´¯åŠ æ“ä½œ
+        MA_FILTER_Sum_1 += MA_Filter_Buffer_first[0][MA_Filter_cnt];
+        MA_FILTER_Sum_2 += MA_Filter_Buffer_first[1][MA_Filter_cnt];
+        MA_FILTER_Sum_3 += MA_Filter_Buffer_first[2][MA_Filter_cnt];
+    }
+
+    //ç¼“å†²åŒºå¾€å·¦ç§»åŠ¨ï¼Œä¸¢æ‰æœ€å…ˆè¿›æ¥çš„é‚£ä¸ªæ•°æ®
+    for (MA_Filter_cnt = 0; MA_Filter_cnt < MA_FILTER_NUM_second; MA_Filter_cnt++) {
+        //æ‰€æœ‰æ•°æ®å¾€å·¦ç§»åŠ¨ï¼Œä¸¢æ‰æœ€ä½ä½
+        MA_Filter_Buffer_second[0][MA_Filter_cnt] = MA_Filter_Buffer_second[0][MA_Filter_cnt + 1];
+        MA_Filter_Buffer_second[1][MA_Filter_cnt] = MA_Filter_Buffer_second[1][MA_Filter_cnt + 1];
+        MA_Filter_Buffer_second[2][MA_Filter_cnt] = MA_Filter_Buffer_second[2][MA_Filter_cnt + 1];
+
+        //è¿›è¡Œç´¯åŠ æ“ä½œ
+        MA_FILTER_Sum_4 += MA_Filter_Buffer_second[0][MA_Filter_cnt];
+        MA_FILTER_Sum_5 += MA_Filter_Buffer_second[1][MA_Filter_cnt];
+        MA_FILTER_Sum_6 += MA_Filter_Buffer_second[2][MA_Filter_cnt];
+    }
+
+    //ç´¯åŠ å’Œï¼Œé™¤ä»¥æ•°é‡ï¼Œå¾—åˆ°æ»¤æ³¢å€¼
+    buffer_1_after[0] = (float) (MA_FILTER_Sum_1) / (float) MA_FILTER_NUM_first;
+    buffer_1_after[1] = (float) (MA_FILTER_Sum_2) / (float) MA_FILTER_NUM_first;
+    buffer_1_after[2] = (float) (MA_FILTER_Sum_3) / (float) MA_FILTER_NUM_first;
+
+    buffer_2_after[0] = (float) (MA_FILTER_Sum_4) / (float) MA_FILTER_NUM_second;
+    buffer_2_after[1] = (float) (MA_FILTER_Sum_5) / (float) MA_FILTER_NUM_second;
+    buffer_2_after[2] = (float) (MA_FILTER_Sum_6) / (float) MA_FILTER_NUM_second;
 }
 //=============================================================//
 
+/***********************************************************
+** å‡½æ•°åç§°: IIR_I_Filter
+** åŠŸèƒ½æè¿°: IIRç›´æ¥Iå‹æ»¤æ³¢å™¨
+** è¾“    å…¥: *x     å‚¨å­˜æœªæ»¤æ³¢çš„æ•°æ®
+**           *y     å‚¨å­˜æ»¤æ³¢åçš„æ•°æ®
+**           *b     å‚¨å­˜ç³»æ•°b
+**           *a     å‚¨å­˜ç³»æ•°a
+**           nb     æ•°ç»„*bçš„é•¿åº¦
+**           na     æ•°ç»„*açš„é•¿åº¦
+**           LpfFactor
+** è¾“    å‡º: OutData
+** è¯´    æ˜: æ— 
+** å‡½æ•°åŸå‹: y(n) = b0*x(n) + b1*x(n-1) + b2*x(n-2) - a1*y(n-1) - a2*y(n-2)
 
-
-void IIR_Digital_Filter()
-{
-
-
-
-
+************************************************************/
+double IIR_I_Filter(double *x, double *y, double *b, double *a, short nb, short na) {
+    double z1, z2;
+    short i;
+    double OutData;
+    for (i = nb - 1; i > 0; i--) {
+        x[i] = x[i - 1];
+    }
+    for (z1 = 0, i = 0; i < nb; i++) {
+        z1 += x[i] * b[i];
+    }
+    for (i = na - 1; i > 0; i--) {
+        y[i] = y[i - 1];
+    }
+    for (z2 = 0, i = 1; i < na; i++) {
+        z2 += y[i] * a[i];
+    }
+    y[0] = z1 - z2;
+    OutData = y[0];
+    return OutData;
 }
 
 
-
-void Kalman_Filter()
+#define KalmanFilter_Q 	0.666666f
+#define KalmanFilter_R 	0.333333f
+void Data_KalmanFilter(float *cov_history, float *Data_history, s16 *Data_now, float *Data_after)
 {
+	float x_mid[3];    // å‡è®¾å€¼ä¸å˜ï¼Œé¢„è®¾å€¼
+	float p_mid[3];    // å°†å†å²çš„åæ–¹å·®ã€‚ã€‚ã€‚
+	float kg[3];       // å¡å°”æ›¼å¢ç›Š
 
+    // å‡è®¾å€¼ä¸å˜ï¼Œé¢„è®¾å€¼
+    x_mid[0] = Data_history[0];
+    x_mid[1] = Data_history[1];
+    x_mid[2] = Data_history[2];
 
+    // å°†å†å²çš„åæ–¹å·®ã€‚ã€‚ã€‚
+    p_mid[0] = cov_history[0] + KalmanFilter_Q;
+    p_mid[1] = cov_history[1] + KalmanFilter_Q;
+    p_mid[2] = cov_history[2] + KalmanFilter_Q;
+	
+    // è®¡ç®—å¡å°”æ›¼å¢ç›Š
+    kg[0] = p_mid[0] / (p_mid[0] + KalmanFilter_R);
+	kg[1] = p_mid[1] / (p_mid[1] + KalmanFilter_R);
+	kg[2] = p_mid[2] / (p_mid[2] + KalmanFilter_R);
 
+    // è®¡ç®—å¡å°”æ›¼æµ‹è¯•å€¼
+    Data_history[0] = Data_after[0] = x_mid[0] + kg[0] * (Data_now[0] - x_mid[0]);
+    Data_history[1] = Data_after[1] = x_mid[1] + kg[1] * (Data_now[1] - x_mid[1]);
+    Data_history[2] = Data_after[2] = x_mid[2] + kg[2] * (Data_now[2] - x_mid[2]);
 
-
-
+    // è®¡ç®—æµ‹è¯•å€¼çš„åæ–¹å·®å¹¶å°†å…¶å‚¨å­˜ï¼Œæ–¹ä¾¿ä¸‹æ¬¡ä½¿ç”¨
+    cov_history[0] = (1 - kg[0]) * p_mid[0];
+    cov_history[1] = (1 - kg[1]) * p_mid[1];
+    cov_history[2] = (1 - kg[2]) * p_mid[2];
 }
+//=============================================================//

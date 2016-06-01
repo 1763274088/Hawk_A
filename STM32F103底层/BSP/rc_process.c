@@ -2,96 +2,89 @@
 #include "futaba_sbus.h"
 #include "communication.h"
 
-_SBUS_RECEIVE_DATA	Sbus_Receive_Data;
+_SBUS_RECEIVE_DATA Sbus_Receive_Data;
 
-//ËùÄÜ¿ØÖÆµÄ×î´ó½Ç¶ÈÖµ
-#define Max_angle			25
-#define Zoom					10
+//æ‰€èƒ½æ§åˆ¶çš„æœ€å¤§è§’åº¦å€¼
+#define Max_angle		25
+#define Zoom			10
 #define Send_length		sizeof(_target_result)
 
 
-
-//Ô­Ê¼ÖµËÀÇø´¦Àí
-int16_t deathzoom(int16_t x,int16_t zoom)
-{
-	int16_t result;
-	if(x>0)
-	{
-		result = x - zoom;
-		if(result<0)
-		{
-			result = 0;
-		}
-	}
-	else
-	{
-		result = x + zoom;
-		if(result>0)
-		{
-			result = 0;
-		}
-	}
-  return (result);
+//åŸå§‹å€¼æ­»åŒºå¤„ç†
+int16_t deathzoom(int16_t x, int16_t zoom) {
+    int16_t result;
+    if (x > 0) {
+        result = x - zoom;
+        if (result < 0) {
+            result = 0;
+        }
+    }
+    else {
+        result = x + zoom;
+        if (result > 0) {
+            result = 0;
+        }
+    }
+    return (result);
 }
 
-void remote_process(void)
-{		
-		uint8_t Data_length;
-		int16_t	pitch_difference;
-		int16_t	roll_difference;		
-		
-		//´¦ÀíÇ°£¬ÏÈ¶ÔĞ£ÑéºÍ½øĞĞÇåÁã´¦Àí
-		Target.control_target.check=0;
-	
-		//·¢ËÍµÄ°üÍ·£º¹Ì¶¨Îª0xAA
-		Target.control_target.head=0xAA;
-	
-		//·¢ËÍµÄ°üÍ·£º¹Ì¶¨Îª0xBB
-		Target.control_target.head_1=0xBB;
-	
-		//¿ØÖÆµÄÄ£Ê½£ºÈıÖÖÄ£Ê½£¬·Ö±ğÎª×ËÌ¬¡¢ÊÖ¶¯¡¢µ¼º½¡¢Í£Ö¹Ä£Ê½
-		if(Sbus_Receive_Data.Channel_received_value[4]==306)
-		Target.control_target.mode=0;
-		
-		if(Sbus_Receive_Data.Channel_received_value[4]==1000)
-			Target.control_target.mode=1;
-		
-		if(Sbus_Receive_Data.Channel_received_value[4]==1694)
-			Target.control_target.mode=2;	
-	
-		//ÓÍÃÅÖµ£ºÒ£¿ØÆ÷´¦ÀíÖ®ºóµÄÓÍÃÅÖµ£¨Ô­Ê¼ÊıÖµ£©
-		Target.control_target.Altiude=2000-Sbus_Receive_Data.Channel_received_value[2];					//ÓÍÃÅ¿ØÖÆÍ¨µÀÖµ;
+void remote_process(void) {
+    uint8_t Data_length;
+    int16_t pitch_difference;
+    int16_t roll_difference;
 
-		//==================================================//
-		//²ÉÓÃ¶ÔÓ¦µÄ±ÈÀı´¦Àí
-		//¿ØÖÆµÄPitchÖá½Ç¶ÈÖµ£¬ÏŞÖÆÔÚ¿ØÖÆµÄ·¶Î§ÄÚ
-		pitch_difference=(Sbus_Receive_Data.Channel_received_value[1]-1000);								//pitchÖá¿ØÖÆÍ¨µÀÖµ
-		Target.control_target.Pitch=Max_angle*(	deathzoom(pitch_difference,Zoom) /690.0f);
-		//==================================================//
-	
-		//==================================================//
-		//²ÉÓÃ¶ÔÓ¦µÄ±ÈÀı´¦Àí
-		//¿ØÖÆµÄRollÖá½Ç¶ÈÖµ£¬ÏŞÖÆÔÚ¿ØÖÆµÄ·¶Î§ÄÚ		
-		roll_difference=(1000-Sbus_Receive_Data.Channel_received_value[0]);									//rollÖá¿ØÖÆÍ¨µÀÖµ
-		Target.control_target.Roll=Max_angle*(	deathzoom(roll_difference,Zoom) /690.0f);
-		//==================================================//
+    //å¤„ç†å‰ï¼Œå…ˆå¯¹æ ¡éªŒå’Œè¿›è¡Œæ¸…é›¶å¤„ç†
+    Target.control_target.check = 0;
 
-		//==================================================//	
-		//ÓÉÓÚYAWÖáµÄ´¦Àí±È½ÏÌØÊâ£¬ËùÒÔÕâÀï²»×ö¾ßÌå´¦Àí
-		//¿ØÖÆµÄYawÖá½Ç¶ÈÖµ£¬ÏŞÖÆÔÚ¿ØÖÆµÄ·¶Î§ÄÚ
-		Target.control_target.Yaw=Sbus_Receive_Data.Channel_received_value[3];								//yawÖá¿ØÖÆÍ¨µÀÖµ
-		//==================================================//	
-			
-		//==================================================//	
-		//*****ÌØ±ğ×¢Òâ£º·¢ËÍºóÒªÇåÁã£¬»òÕß¼ÆËãÇ°ÒªÇåÁã£¬·ñÔò£¬Ğ£ÑéµÄÊı¾İ½«ÊÇ´íµÄ!*****//
-		//Êı¾İ°üµÄĞ£ÑéºÍ£ºËùÓĞÊı¾İµÄÀÛ¼ÓºÍ	
-		for(Data_length=0;Data_length<(Send_length-1);Data_length++)	
-		Target.control_target.check+=Target.Send_buffer[Data_length];
-		//==================================================//	
+    //å‘é€çš„åŒ…å¤´ï¼šå›ºå®šä¸º0xAA
+    Target.control_target.head = 0xAA;
 
-		//°Ñ´¦ÀíÍêÖ®ºóµÄÖµ£¬·¢ËÍ³öÈ¥
-		usart_send_data(Send_length,Target.Send_buffer);	
-		
+    //å‘é€çš„åŒ…å¤´ï¼šå›ºå®šä¸º0xBB
+    Target.control_target.head_1 = 0xBB;
+
+    //æ§åˆ¶çš„æ¨¡å¼ï¼šä¸‰ç§æ¨¡å¼ï¼Œåˆ†åˆ«ä¸ºå§¿æ€ã€æ‰‹åŠ¨ã€å¯¼èˆªã€åœæ­¢æ¨¡å¼
+    if (Sbus_Receive_Data.Channel_received_value[4] == 306)
+        Target.control_target.mode = 0;
+
+    if (Sbus_Receive_Data.Channel_received_value[4] == 1000)
+        Target.control_target.mode = 1;
+
+    if (Sbus_Receive_Data.Channel_received_value[4] == 1694)
+        Target.control_target.mode = 2;
+
+    //æ²¹é—¨å€¼ï¼šé¥æ§å™¨å¤„ç†ä¹‹åçš„æ²¹é—¨å€¼ï¼ˆåŸå§‹æ•°å€¼ï¼‰
+    Target.control_target.Altiude = 2000 - Sbus_Receive_Data.Channel_received_value[2];                    //æ²¹é—¨æ§åˆ¶é€šé“å€¼;
+
+    //==================================================//
+    //é‡‡ç”¨å¯¹åº”çš„æ¯”ä¾‹å¤„ç†
+    //æ§åˆ¶çš„Pitchè½´è§’åº¦å€¼ï¼Œé™åˆ¶åœ¨æ§åˆ¶çš„èŒƒå›´å†…
+    pitch_difference = (Sbus_Receive_Data.Channel_received_value[1] - 1000);	//pitchè½´æ§åˆ¶é€šé“å€¼
+    Target.control_target.Pitch = Max_angle * (deathzoom(pitch_difference, Zoom) / 690.0f);
+    //==================================================//
+
+    //==================================================//
+    //é‡‡ç”¨å¯¹åº”çš„æ¯”ä¾‹å¤„ç†
+    //æ§åˆ¶çš„Rollè½´è§’åº¦å€¼ï¼Œé™åˆ¶åœ¨æ§åˆ¶çš„èŒƒå›´å†…
+    roll_difference = (1000 - Sbus_Receive_Data.Channel_received_value[0]);		//rollè½´æ§åˆ¶é€šé“å€¼
+    Target.control_target.Roll = Max_angle * (deathzoom(roll_difference, Zoom) / 690.0f);
+    //==================================================//
+
+    //==================================================//
+    //ç”±äºYAWè½´çš„å¤„ç†æ¯”è¾ƒç‰¹æ®Šï¼Œæ‰€ä»¥è¿™é‡Œä¸åšå…·ä½“å¤„ç†
+    //æ§åˆ¶çš„Yawè½´è§’åº¦å€¼ï¼Œé™åˆ¶åœ¨æ§åˆ¶çš„èŒƒå›´å†…
+    Target.control_target.Yaw = Sbus_Receive_Data.Channel_received_value[3];	//yawè½´æ§åˆ¶é€šé“å€¼
+    //==================================================//
+
+    //==================================================//
+    //*****ç‰¹åˆ«æ³¨æ„ï¼šå‘é€åè¦æ¸…é›¶ï¼Œæˆ–è€…è®¡ç®—å‰è¦æ¸…é›¶ï¼Œå¦åˆ™ï¼Œæ ¡éªŒçš„æ•°æ®å°†æ˜¯é”™çš„!*****//
+    //æ•°æ®åŒ…çš„æ ¡éªŒå’Œï¼šæ‰€æœ‰æ•°æ®çš„ç´¯åŠ å’Œ
+    for (Data_length = 0; Data_length < (Send_length - 1); Data_length++)
+        Target.control_target.check += Target.Send_buffer[Data_length];
+    //==================================================//
+
+    //æŠŠå¤„ç†å®Œä¹‹åçš„å€¼ï¼Œå‘é€å‡ºå»
+    usart_send_data(Send_length, Target.Send_buffer);
+
 }
 
 
